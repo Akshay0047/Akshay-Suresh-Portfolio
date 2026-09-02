@@ -222,64 +222,79 @@ function LoadingScreen({ onComplete }: { onComplete: () => void }) {
 }
 
 function SwordCursor() {
-  const previous = useRef<{ x: number; y: number } | null>(null);
-  const nextId = useRef(0);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const trailPoints = useRef<Array<{ x: number; y: number; time: number }>>([]);
   const [pointer, setPointer] = useState({ x: -100, y: -100, visible: false });
-  const [slash, setSlash] = useState<{ id: number; x: number; y: number; angle: number; length: number } | null>(null);
 
   useEffect(() => {
+    const canvas = canvasRef.current;
+    const context = canvas?.getContext('2d');
+    if (!canvas || !context) return;
+
+    const resizeCanvas = () => {
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = window.innerWidth * pixelRatio;
+      canvas.height = window.innerHeight * pixelRatio;
+      context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+    };
+
     const handleMove = (event: PointerEvent) => {
       const x = event.clientX;
       const y = event.clientY;
-      const last = previous.current;
-      const dx = last ? x - last.x : 0;
-      const dy = last ? y - last.y : 0;
-      const distance = Math.hypot(dx, dy);
-      const angle = distance > 2 ? (Math.atan2(dy, dx) * 180) / Math.PI : 0;
-
+      const last = trailPoints.current[trailPoints.current.length - 1];
+      if (last && Math.hypot(x - last.x, y - last.y) < 2) return;
       setPointer({ x, y, visible: true });
-      if (last && distance > 5) {
-        const id = nextId.current++;
-        const length = Math.min(260, Math.max(72, distance * 4.8));
-        const radians = (angle * Math.PI) / 180;
-        setSlash({
-          id,
-          x: x - Math.cos(radians) * length * 0.5,
-          y: y - Math.sin(radians) * length * 0.5,
-          angle,
-          length,
-        });
-      }
-      previous.current = { x, y };
-    };
-    const handleLeave = () => {
-      previous.current = null;
-      setPointer((current) => ({ ...current, visible: false }));
-      setSlash(null);
+      trailPoints.current.push({ x, y, time: performance.now() });
+      if (trailPoints.current.length > 28) trailPoints.current.shift();
     };
 
+    const handleLeave = () => {
+      trailPoints.current = [];
+      setPointer((current) => ({ ...current, visible: false }));
+    };
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
     window.addEventListener('pointermove', handleMove);
     document.addEventListener('mouseleave', handleLeave);
+    let animationFrame = 0;
+    const renderTrail = (time: number) => {
+      const points = trailPoints.current;
+      while (points.length && time - points[0].time > 720) points.shift();
+
+      context.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      if (points.length > 1) {
+        context.lineCap = 'round';
+        context.lineJoin = 'round';
+        for (let index = 1; index < points.length; index += 1) {
+          const point = points[index - 1];
+          const nextPoint = points[index];
+          const age = time - nextPoint.time;
+          const ageOpacity = Math.max(0, 1 - age / 720);
+          const progress = index / (points.length - 1);
+          context.strokeStyle = `rgba(255, 255, 255, ${ageOpacity * (0.16 + progress * 0.84)})`;
+          context.lineWidth = 1.5 + progress * 8.5;
+          context.beginPath();
+          context.moveTo(point.x, point.y);
+          context.lineTo(nextPoint.x, nextPoint.y);
+          context.stroke();
+        }
+      }
+      animationFrame = window.requestAnimationFrame(renderTrail);
+    };
+    animationFrame = window.requestAnimationFrame(renderTrail);
+
     return () => {
+      window.removeEventListener('resize', resizeCanvas);
       window.removeEventListener('pointermove', handleMove);
       document.removeEventListener('mouseleave', handleLeave);
+      window.cancelAnimationFrame(animationFrame);
     };
   }, []);
 
   return (
     <div className="sword-cursor-layer" aria-hidden="true">
-      {slash && (
-        <span
-          className="sword-slash"
-          key={slash.id}
-          style={{
-            left: slash.x,
-            top: slash.y,
-            width: slash.length,
-            transform: `translate(-50%, -50%) rotate(${slash.angle}deg)`,
-          }}
-        />
-      )}
+      <canvas ref={canvasRef} className="sword-trail-canvas" />
       <span
         className={`sword-cursor ${pointer.visible ? 'is-visible' : ''}`}
         style={{
