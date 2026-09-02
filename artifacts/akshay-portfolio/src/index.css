@@ -1944,3 +1944,159 @@ kbd {
     max-width: 230px;
   }
 }
+
+/* The pointer is a fixed game reticle; only its single slash line has motion. */
+.sword-cursor {
+  width: 12px;
+  height: 12px;
+  background: #9a6829;
+  border: 1px solid #d2a04e;
+  box-shadow: 0 0 0 2px rgba(88, 55, 22, 0.7), 0 0 9px rgba(214, 157, 67, 0.52);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  filter: none;
+}
+
+.sword-cursor::before,
+.sword-cursor::after,
+.sword-cursor i {
+  display: none;
+}
+
+.sword-slash {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #9a6829 22%, #e2b661 50%, #9a6829 78%, transparent);
+  animation: pointer-slash 320ms ease-out forwards;
+  filter: drop-shadow(0 0 4px rgba(211, 151, 59, 0.56));
+}
+
+.skill-tree-layout {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.42fr) minmax(0, 1fr);
+  align-items: stretch;
+  gap: clamp(20px, 3vw, 44px);
+  min-height: 0;
+  margin-top: auto;
+}
+
+.skill-category-list {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+}
+
+.skill-category-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  padding: 0 18px;
+  color: var(--dimmer);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  isolation: isolate;
+}
+
+.skill-category-button::before {
+  position: absolute;
+  inset: 0 -8px;
+  z-index: -1;
+  content: '';
+  background: rgba(24, 22, 19, 0.8);
+  clip-path: polygon(1% 18%, 14% 6%, 32% 11%, 51% 4%, 71% 10%, 98% 8%, 93% 40%, 100% 62%, 91% 88%, 71% 82%, 49% 95%, 29% 86%, 6% 93%, 8% 58%, 0 43%);
+  transition: background 160ms ease;
+}
+
+.skill-category-button:hover,
+.skill-category-button:focus-visible,
+.skill-category-button.is-selected {
+  color: #f0d19a;
+  transform: translateX(5px);
+}
+
+.skill-category-button:hover::before,
+.skill-category-button:focus-visible::before {
+  background: rgba(72, 57, 40, 0.9);
+}
+
+.skill-category-button.is-selected::before {
+  background: linear-gradient(90deg, #8b4b21, #ba6e2e 55%, #70401f);
+}
+
+.skill-category-button span {
+  font-family: var(--app-font-serif);
+  font-size: 17px;
+  letter-spacing: 0.03em;
+}
+
+.skill-category-button b {
+  color: currentColor;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+}
+
+.attributes-panel .attribute-list {
+  justify-content: center;
+  gap: 14px;
+  max-width: none;
+  margin-top: 0;
+  padding-left: 3px;
+  border-left: 1px solid var(--amber);
+}
+
+.options-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.options-actions .close-options {
+  margin-top: 23px;
+}
+
+@media (max-width: 800px) {
+  .skill-tree-layout {
+    grid-template-columns: 1fr;
+    gap: 11px;
+    margin-top: 17px;
+  }
+
+  .skill-category-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .skill-category-button {
+    min-height: 38px;
+    padding: 0 8px;
+  }
+
+  .skill-category-button::before {
+    inset: 0 -3px;
+  }
+
+  .skill-category-button span {
+    font-family: var(--app-font-mono);
+    font-size: 7px;
+    letter-spacing: 0.03em;
+  }
+
+  .skill-category-button b {
+    display: none;
+  }
+
+  .attributes-panel .attribute-list {
+    gap: 10px;
+    padding: 12px 0 0;
+    border-top: 1px solid var(--amber);
+    border-left: 0;
+  }
+
+  .options-actions .game-action-button {
+    flex: 1 1 145px;
+  }
+}

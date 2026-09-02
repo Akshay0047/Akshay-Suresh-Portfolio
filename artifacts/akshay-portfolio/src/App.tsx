@@ -94,7 +94,27 @@ const attributes = [
   { name: 'DJANGO REST', value: 81, note: 'apis / architecture' },
   { name: 'REDUX TOOLKIT', value: 77, note: 'state / scale' },
   { name: 'MONGODB', value: 73, note: 'data / modeling' },
+  { name: 'NODE.JS', value: 72, note: 'runtime / tooling' },
+  { name: 'JAVA', value: 68, note: 'object-oriented logic' },
 ];
+
+const skillCategories = {
+  'TECHNICAL SKILLS': attributes,
+  'PERSONAL SKILLS': [
+    { name: 'PROBLEM SOLVING', value: 92, note: 'break down / rebuild' },
+    { name: 'CURIOSITY', value: 90, note: 'ask better questions' },
+    { name: 'ADAPTABILITY', value: 86, note: 'learn / iterate' },
+    { name: 'COLLABORATION', value: 83, note: 'share / ship' },
+    { name: 'COMMUNICATION', value: 79, note: 'clarity / intent' },
+  ],
+  'TOOLS & PRACTICE': [
+    { name: 'API DESIGN', value: 84, note: 'contracts / flow' },
+    { name: 'COMPUTER VISION', value: 74, note: 'signals / models' },
+    { name: 'MACHINE LEARNING', value: 71, note: 'experiments / data' },
+    { name: 'GIT', value: 80, note: 'branches / history' },
+    { name: 'UI SYSTEMS', value: 88, note: 'hierarchy / feedback' },
+  ],
+} as const;
 
 const menuItems: { id: MenuId; label: string; hint: string }[] = [
   { id: 'projects', label: 'INVENTORY', hint: 'projects & combat arts' },
@@ -204,8 +224,8 @@ function LoadingScreen({ onComplete }: { onComplete: () => void }) {
 function SwordCursor() {
   const previous = useRef<{ x: number; y: number } | null>(null);
   const nextId = useRef(0);
-  const [pointer, setPointer] = useState({ x: -100, y: -100, angle: -24, visible: false });
-  const [slashes, setSlashes] = useState<Array<{ id: number; x: number; y: number; angle: number; length: number }>>([]);
+  const [pointer, setPointer] = useState({ x: -100, y: -100, visible: false });
+  const [slash, setSlash] = useState<{ id: number; x: number; y: number; angle: number; length: number } | null>(null);
 
   useEffect(() => {
     const handleMove = (event: PointerEvent) => {
@@ -215,24 +235,19 @@ function SwordCursor() {
       const dx = last ? x - last.x : 0;
       const dy = last ? y - last.y : 0;
       const distance = Math.hypot(dx, dy);
-      const angle = distance > 2 ? (Math.atan2(dy, dx) * 180) / Math.PI - 22 : -24;
+      const angle = distance > 2 ? (Math.atan2(dy, dx) * 180) / Math.PI : 0;
 
-      setPointer((current) => ({ x, y, angle: distance > 2 ? angle : current.angle, visible: true }));
+      setPointer({ x, y, visible: true });
       if (last && distance > 5) {
         const id = nextId.current++;
-        setSlashes((current) => [
-          ...current.slice(-9),
-          { id, x, y, angle, length: Math.min(112, Math.max(24, distance * 1.8)) },
-        ]);
-        window.setTimeout(() => {
-          setSlashes((current) => current.filter((slash) => slash.id !== id));
-        }, 280);
+        setSlash({ id, x, y, angle, length: Math.min(120, Math.max(26, distance * 1.8)) });
       }
       previous.current = { x, y };
     };
     const handleLeave = () => {
       previous.current = null;
       setPointer((current) => ({ ...current, visible: false }));
+      setSlash(null);
     };
 
     window.addEventListener('pointermove', handleMove);
@@ -245,7 +260,7 @@ function SwordCursor() {
 
   return (
     <div className="sword-cursor-layer" aria-hidden="true">
-      {slashes.map((slash) => (
+      {slash && (
         <span
           className="sword-slash"
           key={slash.id}
@@ -256,16 +271,15 @@ function SwordCursor() {
             transform: `translate(-50%, -50%) rotate(${slash.angle}deg)`,
           }}
         />
-      ))}
+      )}
       <span
         className={`sword-cursor ${pointer.visible ? 'is-visible' : ''}`}
         style={{
           left: pointer.x,
           top: pointer.y,
-          transform: `translate(-50%, -50%) rotate(${pointer.angle}deg)`,
+          transform: 'translate(-50%, -50%)',
         }}
       >
-        <i />
       </span>
     </div>
   );
@@ -430,22 +444,41 @@ function ProjectPanel({
 }
 
 function AttributesPanel() {
+  const categories = Object.keys(skillCategories) as Array<keyof typeof skillCategories>;
+  const [activeCategory, setActiveCategory] = useState<keyof typeof skillCategories>('TECHNICAL SKILLS');
+  const visibleSkills = skillCategories[activeCategory];
+
   return (
-    <div className="content-panel">
+    <div className="content-panel attributes-panel">
       <div className="panel-topline">
         <span>CHARACTER STATUS / ATTRIBUTES</span>
         <span className="status-dot"><CircleDot size={12} /> ONLINE</span>
       </div>
       <PanelTitle kicker="CURRENT LOADOUT" title="Skill" accent=" tree" />
       <p className="panel-lead">The instruments I reach for when a problem needs to become a reliable experience.</p>
-      <div className="attribute-list">
-        {attributes.map((attribute) => (
-          <div className="attribute-row" key={attribute.name}>
-            <div className="attribute-label"><span>{attribute.name}</span><small>{attribute.note}</small></div>
-            <div className="attribute-bar"><span style={{ width: `${attribute.value}%` }} /></div>
-            <b>{attribute.value}</b>
-          </div>
-        ))}
+      <div className="skill-tree-layout">
+        <nav className="skill-category-list" aria-label="Skill categories">
+          {categories.map((category) => (
+            <button
+              className={`skill-category-button ${category === activeCategory ? 'is-selected' : ''}`}
+              type="button"
+              key={category}
+              onClick={() => setActiveCategory(category)}
+            >
+              <span>{category}</span>
+              <b>{skillCategories[category].length}</b>
+            </button>
+          ))}
+        </nav>
+        <div className="attribute-list">
+          {visibleSkills.map((attribute) => (
+            <div className="attribute-row" key={attribute.name}>
+              <div className="attribute-label"><span>{attribute.name}</span><small>{attribute.note}</small></div>
+              <div className="attribute-bar"><span style={{ width: `${attribute.value}%` }} /></div>
+              <b>{attribute.value}</b>
+            </div>
+          ))}
+        </div>
       </div>
       <div className="panel-callout"><Sparkles size={18} /><span>ATTACK POWER <b>WEB / API / STATE</b></span></div>
     </div>
@@ -539,7 +572,7 @@ function EquipmentPanel() {
   );
 }
 
-function MainMenu() {
+function MainMenu({ onReturnToLanding }: { onReturnToLanding: () => void }) {
   const [menuIndex, setMenuIndex] = useState(0);
   const [projectIndex, setProjectIndex] = useState(0);
   const [topTab, setTopTab] = useState('INVENTORY');
@@ -652,13 +685,16 @@ function MainMenu() {
 
       <AnimatePresence>
         {showOptions && (
-          <motion.div className="options-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowOptions(false)}>
+           <motion.div className="options-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setShowOptions(false); setTopTab('INVENTORY'); }}>
            <motion.div className="options-panel" initial={{ y: 12 }} animate={{ y: 0 }} onClick={(event) => event.stopPropagation()}>
               <div className="panel-topline"><span>OPTIONS</span><button type="button" onClick={() => { setShowOptions(false); setTopTab('INVENTORY'); }} aria-label="Close options"><X size={17} /></button></div>
               <div className="option-row"><span>INTERFACE</span><b>GAME MENU</b><Check size={15} /></div>
               <div className="option-row"><span>MOTION</span><b>ENABLED</b><Check size={15} /></div>
               <div className="option-row"><span>INPUT</span><b>WASD / ARROWS</b><Check size={15} /></div>
-              <button className="game-action-button primary close-options" type="button" onClick={() => { setShowOptions(false); setTopTab('INVENTORY'); }}>RETURN TO MENU</button>
+              <div className="options-actions">
+                <button className="game-action-button primary close-options" type="button" onClick={() => { setShowOptions(false); setTopTab('INVENTORY'); }}>RETURN TO MENU</button>
+                <button className="game-action-button close-options" type="button" onClick={onReturnToLanding}>RETURN TO LANDING</button>
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -687,7 +723,15 @@ function Home() {
             </div>
           </motion.div>
         )}
-        {screen === 'menu' && <MainMenu key="menu" />}
+        {screen === 'menu' && (
+          <MainMenu
+            key="menu"
+            onReturnToLanding={() => {
+              setOpenTitleOptions(false);
+              setScreen('title');
+            }}
+          />
+        )}
       </AnimatePresence>
     </div>
   );
