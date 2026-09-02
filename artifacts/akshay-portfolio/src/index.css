@@ -2330,3 +2330,82 @@ kbd {
 .sword-cursor {
   z-index: 2;
 }
+
+@keyframes fruit-ready-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(213, 155, 88, 0), 0 8px 20px rgba(0, 0, 0, 0.28);
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(213, 155, 88, 0.24), 0 8px 20px rgba(0, 0, 0, 0.28);
+  }
+}
+
+.fruit-game-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.fruit-trigger {
+  position: fixed;
+  right: clamp(14px, 4vw, 58px);
+  bottom: 72px;
+  z-index: 35;
+  display: grid;
+  grid-template-columns: 21px auto auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 104px;
+  padding: 9px 11px;
+  color: var(--amber-pale);
+  font-family: var(--app-font-mono);
+  font-size: 8px;
+  letter-spacing: 0.16em;
+  background: linear-gradient(135deg, rgba(73, 45, 25, 0.98), rgba(29, 25, 20, 0.98));
+  border: 1px solid rgba(213, 155, 88, 0.7);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.28);
+  animation: fruit-ready-pulse 2.8s ease-in-out infinite;
+}
+
+.fruit-trigger svg {
+  color: #e0a24c;
+}
+
+.fruit-trigger b {
+  justify-self: end;
+  color: var(--paper-bright);
+  font-size: 8px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+}
+
+.fruit-trigger:hover,
+.fruit-trigger:focus-visible,
+.fruit-trigger.is-active {
+  color: #fff0c9;
+  background: linear-gradient(135deg, #a45e29, #55301b);
+  border-color: #f1c17a;
+  outline: none;
+  transform: translateY(-2px);
+}
+
+.fruit-trigger.is-active {
+  animation: none;
+}
+
+@media (max-width: 800px) {
+  .fruit-trigger {
+    right: 14px;
+    bottom: 61px;
+    min-width: 84px;
+    grid-template-columns: 18px auto auto;
+    gap: 6px;
+    padding: 8px 9px;
+    font-size: 7px;
+  }
+}

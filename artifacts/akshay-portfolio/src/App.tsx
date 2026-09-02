@@ -2,6 +2,7 @@ import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
+  Apple,
   ArrowLeft,
   ArrowRight,
   Check,
@@ -305,6 +306,317 @@ function SwordCursor() {
       >
       </span>
     </div>
+  );
+}
+
+type ArcadeObject = {
+  id: number;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  gravity: number;
+  rotation: number;
+  spin: number;
+  radius: number;
+  kind: 'fruit' | 'bomb';
+  color: string;
+  sliced: boolean;
+};
+
+type ArcadeSplash = {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  size: number;
+  color: string;
+};
+
+type ArcadeBurst = {
+  x: number;
+  y: number;
+  angle: number;
+  life: number;
+};
+
+function distanceToSegment(
+  pointX: number,
+  pointY: number,
+  startX: number,
+  startY: number,
+  endX: number,
+  endY: number,
+) {
+  const segmentX = endX - startX;
+  const segmentY = endY - startY;
+  const lengthSquared = segmentX * segmentX + segmentY * segmentY;
+  if (lengthSquared === 0) return Math.hypot(pointX - startX, pointY - startY);
+  const projection = Math.max(
+    0,
+    Math.min(1, ((pointX - startX) * segmentX + (pointY - startY) * segmentY) / lengthSquared),
+  );
+  return Math.hypot(pointX - (startX + projection * segmentX), pointY - (startY + projection * segmentY));
+}
+
+function FruitArcade() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const objects = useRef<ArcadeObject[]>([]);
+  const splashes = useRef<ArcadeSplash[]>([]);
+  const bursts = useRef<ArcadeBurst[]>([]);
+  const pointer = useRef<{ x: number; y: number } | null>(null);
+  const objectId = useRef(0);
+  const activeRef = useRef(false);
+  const [active, setActive] = useState(false);
+  const [score, setScore] = useState(0);
+
+  useEffect(() => {
+    activeRef.current = active;
+    if (!active) {
+      objects.current = [];
+      splashes.current = [];
+      bursts.current = [];
+      pointer.current = null;
+    }
+  }, [active]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const context = canvas?.getContext('2d');
+    if (!canvas || !context) return;
+
+    const resizeCanvas = () => {
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = window.innerWidth * pixelRatio;
+      canvas.height = window.innerHeight * pixelRatio;
+      context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+    };
+
+    const addSplash = (item: ArcadeObject, angle: number) => {
+      const splashColor = item.kind === 'bomb' ? '#d59b58' : item.color;
+      for (let index = 0; index < 18; index += 1) {
+        const direction = (Math.PI * 2 * index) / 18 + Math.random() * 0.45;
+        const speed = 2 + Math.random() * 5;
+        splashes.current.push({
+          x: item.x,
+          y: item.y,
+          vx: Math.cos(direction) * speed,
+          vy: Math.sin(direction) * speed - 1.5,
+          life: 1,
+          size: 1.5 + Math.random() * 4,
+          color: splashColor,
+        });
+      }
+      bursts.current.push({ x: item.x, y: item.y, angle, life: 1 });
+    };
+
+    const sliceObject = (item: ArcadeObject, angle: number) => {
+      item.sliced = true;
+      addSplash(item, angle);
+      setScore((current) => Math.max(0, current + (item.kind === 'bomb' ? -3 : 1)));
+    };
+
+    const handleMove = (event: PointerEvent) => {
+      const next = { x: event.clientX, y: event.clientY };
+      const previous = pointer.current;
+      if (activeRef.current && previous) {
+        objects.current.forEach((item) => {
+          if (
+            !item.sliced &&
+            distanceToSegment(item.x, item.y, previous.x, previous.y, next.x, next.y) <= item.radius + 12
+          ) {
+            sliceObject(item, Math.atan2(next.y - previous.y, next.x - previous.x));
+          }
+        });
+      }
+      pointer.current = next;
+    };
+
+    const handleLeave = () => {
+      pointer.current = null;
+    };
+
+    const spawnWave = (time: number) => {
+      const spawnCount = Math.random() > 0.68 ? 2 : 1;
+      for (let index = 0; index < spawnCount; index += 1) {
+        const kind = Math.random() > 0.84 ? 'bomb' : 'fruit';
+        const radius = kind === 'bomb' ? 22 : 25 + Math.random() * 5;
+        const colors = ['#cb5b36', '#d89c35', '#ba4435', '#d6b04a'];
+        objects.current.push({
+          id: objectId.current++,
+          x: window.innerWidth * (0.22 + Math.random() * 0.56),
+          y: window.innerHeight + radius + 22,
+          vx: (Math.random() - 0.5) * 4.2,
+          vy: -(10.5 + Math.random() * 3.2),
+          gravity: 0.25 + Math.random() * 0.05,
+          rotation: Math.random() * Math.PI,
+          spin: (Math.random() - 0.5) * 0.08,
+          radius,
+          kind,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          sliced: false,
+        });
+      }
+      return time;
+    };
+
+    const drawFruit = (item: ArcadeObject) => {
+      context.save();
+      context.translate(item.x, item.y);
+      context.rotate(item.rotation);
+      if (item.kind === 'bomb') {
+        context.beginPath();
+        context.arc(0, 0, item.radius, 0, Math.PI * 2);
+        context.fillStyle = '#191817';
+        context.fill();
+        context.lineWidth = 2;
+        context.strokeStyle = '#d59b58';
+        context.stroke();
+        context.beginPath();
+        context.arc(-6, -7, 4, 0, Math.PI * 2);
+        context.fillStyle = 'rgba(255, 241, 201, 0.58)';
+        context.fill();
+        context.beginPath();
+        context.moveTo(6, -18);
+        context.quadraticCurveTo(15, -29, 21, -20);
+        context.strokeStyle = '#c2803e';
+        context.lineWidth = 2;
+        context.stroke();
+        context.beginPath();
+        context.arc(23, -19, 3, 0, Math.PI * 2);
+        context.fillStyle = '#fff2bf';
+        context.shadowColor = '#fff2bf';
+        context.shadowBlur = 12;
+        context.fill();
+      } else {
+        const gradient = context.createRadialGradient(-8, -10, 2, 0, 0, item.radius);
+        gradient.addColorStop(0, '#fff1b5');
+        gradient.addColorStop(0.16, item.color);
+        gradient.addColorStop(1, '#6b2c25');
+        context.beginPath();
+        context.ellipse(0, 2, item.radius * 0.86, item.radius, 0, 0, Math.PI * 2);
+        context.fillStyle = gradient;
+        context.fill();
+        context.lineWidth = 1.5;
+        context.strokeStyle = 'rgba(255, 230, 166, 0.75)';
+        context.stroke();
+        context.beginPath();
+        context.moveTo(0, -item.radius + 4);
+        context.quadraticCurveTo(7, -item.radius - 10, 16, -item.radius - 3);
+        context.strokeStyle = '#6e4424';
+        context.lineWidth = 3;
+        context.stroke();
+        context.beginPath();
+        context.ellipse(9, -item.radius - 5, 8, 3.5, -0.35, 0, Math.PI * 2);
+        context.fillStyle = '#708046';
+        context.fill();
+      }
+      context.restore();
+    };
+
+    let lastSpawn = 0;
+    let lastFrame = performance.now();
+    let animationFrame = 0;
+    const render = (time: number) => {
+      const delta = Math.min(2, Math.max(0.5, (time - lastFrame) / 16.67));
+      lastFrame = time;
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      context.clearRect(0, 0, width, height);
+
+      if (activeRef.current) {
+        if (!lastSpawn || time - lastSpawn > 610) lastSpawn = spawnWave(time);
+        objects.current.forEach((item) => {
+          if (!item.sliced) {
+            item.x += item.vx * delta;
+            item.y += item.vy * delta;
+            item.vy += item.gravity * delta;
+            item.rotation += item.spin * delta;
+          }
+        });
+        objects.current = objects.current.filter((item) => !item.sliced && item.y < height + 90);
+      }
+
+      splashes.current.forEach((particle) => {
+        particle.x += particle.vx * delta;
+        particle.y += particle.vy * delta;
+        particle.vy += 0.18 * delta;
+        particle.vx *= 0.985;
+        particle.life -= 0.035 * delta;
+      });
+      splashes.current = splashes.current.filter((particle) => particle.life > 0);
+
+      bursts.current.forEach((burst) => {
+        burst.life -= 0.055 * delta;
+      });
+      bursts.current = bursts.current.filter((burst) => burst.life > 0);
+
+      objects.current.forEach(drawFruit);
+      splashes.current.forEach((particle) => {
+        context.beginPath();
+        context.arc(particle.x, particle.y, particle.size * particle.life, 0, Math.PI * 2);
+        context.fillStyle = particle.color;
+        context.globalAlpha = particle.life;
+        context.shadowColor = particle.color;
+        context.shadowBlur = 10;
+        context.fill();
+        context.globalAlpha = 1;
+        context.shadowBlur = 0;
+      });
+      bursts.current.forEach((burst) => {
+        context.save();
+        context.translate(burst.x, burst.y);
+        context.rotate(burst.angle);
+        context.globalAlpha = burst.life;
+        context.strokeStyle = '#fffdf3';
+        context.shadowColor = '#ffffff';
+        context.shadowBlur = 16;
+        context.lineWidth = 3 + burst.life * 7;
+        context.beginPath();
+        context.moveTo(-70 * burst.life, 0);
+        context.lineTo(70 * burst.life, 0);
+        context.stroke();
+        context.restore();
+      });
+
+      animationFrame = window.requestAnimationFrame(render);
+    };
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('pointermove', handleMove);
+    document.addEventListener('mouseleave', handleLeave);
+    animationFrame = window.requestAnimationFrame(render);
+
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+      window.removeEventListener('pointermove', handleMove);
+      document.removeEventListener('mouseleave', handleLeave);
+      window.cancelAnimationFrame(animationFrame);
+    };
+  }, []);
+
+  const toggleArcade = () => {
+    setActive((current) => !current);
+    if (!active) setScore(0);
+  };
+
+  return (
+    <>
+      <canvas ref={canvasRef} className={`fruit-game-canvas ${active ? 'is-active' : ''}`} aria-hidden="true" />
+      <button
+        className={`fruit-trigger ${active ? 'is-active' : ''}`}
+        type="button"
+        onClick={toggleArcade}
+        aria-pressed={active}
+        data-testid="button-fruit-mode"
+      >
+        <Apple size={18} strokeWidth={1.5} />
+        <span>{active ? 'EXIT' : 'SLICE'}</span>
+        <b>{String(score).padStart(2, '0')}</b>
+      </button>
+    </>
   );
 }
 
@@ -705,6 +1017,8 @@ function MainMenu({ onReturnToLanding }: { onReturnToLanding: () => void }) {
         </div>
         <div className="footer-status"><ShieldCheck size={14} /> SYSTEM READY <span>© 2026 AS</span></div>
       </footer>
+
+      <FruitArcade />
 
       <AnimatePresence>
         {showOptions && (
