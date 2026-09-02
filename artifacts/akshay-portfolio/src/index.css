@@ -2331,6 +2331,21 @@ kbd {
   z-index: 2;
 }
 
+.attributes-panel .attribute-list {
+  gap: 12px 22px;
+  overflow: visible;
+  padding-right: 0;
+  scrollbar-width: none;
+}
+
+@media (max-width: 800px) {
+  .attributes-panel .attribute-list {
+    gap: 8px 10px;
+    overflow: visible;
+    padding-right: 0;
+  }
+}
+
 @keyframes fruit-ready-pulse {
   0%,
   100% {

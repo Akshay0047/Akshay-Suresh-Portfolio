@@ -246,7 +246,7 @@ function SwordCursor() {
       if (last && Math.hypot(x - last.x, y - last.y) < 2) return;
       setPointer({ x, y, visible: true });
       trailPoints.current.push({ x, y, time: performance.now() });
-      if (trailPoints.current.length > 28) trailPoints.current.shift();
+      if (trailPoints.current.length > 20) trailPoints.current.shift();
     };
 
     const handleLeave = () => {
@@ -261,7 +261,7 @@ function SwordCursor() {
     let animationFrame = 0;
     const renderTrail = (time: number) => {
       const points = trailPoints.current;
-      while (points.length && time - points[0].time > 720) points.shift();
+      while (points.length && time - points[0].time > 520) points.shift();
 
       context.clearRect(0, 0, window.innerWidth, window.innerHeight);
       if (points.length > 1) {
@@ -271,7 +271,7 @@ function SwordCursor() {
           const point = points[index - 1];
           const nextPoint = points[index];
           const age = time - nextPoint.time;
-          const ageOpacity = Math.max(0, 1 - age / 720);
+          const ageOpacity = Math.max(0, 1 - age / 520);
           const progress = index / (points.length - 1);
           context.strokeStyle = `rgba(255, 255, 255, ${ageOpacity * (0.16 + progress * 0.84)})`;
           context.lineWidth = 1.5 + progress * 8.5;
@@ -395,20 +395,20 @@ function FruitArcade() {
 
     const addSplash = (item: ArcadeObject, angle: number) => {
       const splashColor = item.kind === 'bomb' ? '#d59b58' : item.color;
-      for (let index = 0; index < 18; index += 1) {
-        const direction = (Math.PI * 2 * index) / 18 + Math.random() * 0.45;
-        const speed = 2 + Math.random() * 5;
+      for (let index = 0; index < 30; index += 1) {
+        const direction = (Math.PI * 2 * index) / 30 + Math.random() * 0.55;
+        const speed = 2.5 + Math.random() * 6.5;
         splashes.current.push({
           x: item.x,
           y: item.y,
           vx: Math.cos(direction) * speed,
-          vy: Math.sin(direction) * speed - 1.5,
-          life: 1,
-          size: 1.5 + Math.random() * 4,
+          vy: Math.sin(direction) * speed - 2.5,
+          life: 1.2,
+          size: 2 + Math.random() * 5,
           color: splashColor,
         });
       }
-      bursts.current.push({ x: item.x, y: item.y, angle, life: 1 });
+      bursts.current.push({ x: item.x, y: item.y, angle, life: 1.2 });
     };
 
     const sliceObject = (item: ArcadeObject, angle: number) => {
@@ -438,9 +438,9 @@ function FruitArcade() {
     };
 
     const spawnWave = (time: number) => {
-      const spawnCount = Math.random() > 0.68 ? 2 : 1;
+      const spawnCount = Math.random() > 0.5 ? 3 : 2;
       for (let index = 0; index < spawnCount; index += 1) {
-        const kind = Math.random() > 0.84 ? 'bomb' : 'fruit';
+        const kind = index === 1 ? 'bomb' : 'fruit';
         const radius = kind === 'bomb' ? 22 : 25 + Math.random() * 5;
         const colors = ['#cb5b36', '#d89c35', '#ba4435', '#d6b04a'];
         objects.current.push({
@@ -448,7 +448,7 @@ function FruitArcade() {
           x: window.innerWidth * (0.22 + Math.random() * 0.56),
           y: window.innerHeight + radius + 22,
           vx: (Math.random() - 0.5) * 4.2,
-          vy: -(10.5 + Math.random() * 3.2),
+          vy: -(14 + Math.random() * 4.5),
           gravity: 0.25 + Math.random() * 0.05,
           rotation: Math.random() * Math.PI,
           spin: (Math.random() - 0.5) * 0.08,
@@ -543,12 +543,12 @@ function FruitArcade() {
         particle.y += particle.vy * delta;
         particle.vy += 0.18 * delta;
         particle.vx *= 0.985;
-        particle.life -= 0.035 * delta;
+        particle.life -= 0.018 * delta;
       });
       splashes.current = splashes.current.filter((particle) => particle.life > 0);
 
       bursts.current.forEach((burst) => {
-        burst.life -= 0.055 * delta;
+        burst.life -= 0.028 * delta;
       });
       bursts.current = bursts.current.filter((burst) => burst.life > 0);
 
@@ -572,10 +572,15 @@ function FruitArcade() {
         context.strokeStyle = '#fffdf3';
         context.shadowColor = '#ffffff';
         context.shadowBlur = 16;
-        context.lineWidth = 3 + burst.life * 7;
+        context.lineWidth = 3 + burst.life * 8;
         context.beginPath();
-        context.moveTo(-70 * burst.life, 0);
-        context.lineTo(70 * burst.life, 0);
+        context.moveTo(-88 * burst.life, 0);
+        context.lineTo(88 * burst.life, 0);
+        context.stroke();
+        context.globalAlpha = burst.life * 0.72;
+        context.lineWidth = 2.5;
+        context.beginPath();
+        context.arc(0, 0, 20 + (1 - burst.life) * 58, 0, Math.PI * 2);
         context.stroke();
         context.restore();
       });
@@ -831,12 +836,8 @@ function MemoriesPanel() {
           <div><h2>Full-stack development intern</h2><p>Antlegs Technology Solutions Pvt. Ltd.</p><small>Built authentication, profile, and user management applications with React, Django REST Framework, and MongoDB.</small></div>
         </div>
         <div className="memory-entry">
-          <span className="memory-date">2024 / DISTINCTION</span>
-          <div><h2>3rd place — Where&apos;s The Flag</h2><p>IEEE Computer Society CTF</p><small>Placed among 35+ teams. The most useful skill is staying curious when the obvious path closes.</small></div>
-        </div>
-        <div className="memory-entry compact-entry">
-          <span className="memory-date">2024 — PRESENT</span>
-          <div><h2>VIT Vellore / CSE</h2><p>CGPA 9.24</p></div>
+          <span className="memory-date">2022 — PRESENT</span>
+          <div><h2>Computer Science Engineering</h2><p>VIT Vellore · CGPA 9.24</p><small>Building a strong foundation across software engineering, algorithms, systems, and the practical craft of turning ideas into useful products.</small></div>
         </div>
       </div>
     </div>
