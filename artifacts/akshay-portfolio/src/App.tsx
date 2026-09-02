@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -201,6 +201,147 @@ function LoadingScreen({ onComplete }: { onComplete: () => void }) {
   );
 }
 
+function SwordCursor() {
+  const previous = useRef<{ x: number; y: number } | null>(null);
+  const nextId = useRef(0);
+  const [pointer, setPointer] = useState({ x: -100, y: -100, angle: -24, visible: false });
+  const [slashes, setSlashes] = useState<Array<{ id: number; x: number; y: number; angle: number; length: number }>>([]);
+
+  useEffect(() => {
+    const handleMove = (event: PointerEvent) => {
+      const x = event.clientX;
+      const y = event.clientY;
+      const last = previous.current;
+      const dx = last ? x - last.x : 0;
+      const dy = last ? y - last.y : 0;
+      const distance = Math.hypot(dx, dy);
+      const angle = distance > 2 ? (Math.atan2(dy, dx) * 180) / Math.PI - 22 : -24;
+
+      setPointer((current) => ({ x, y, angle: distance > 2 ? angle : current.angle, visible: true }));
+      if (last && distance > 5) {
+        const id = nextId.current++;
+        setSlashes((current) => [
+          ...current.slice(-9),
+          { id, x, y, angle, length: Math.min(112, Math.max(24, distance * 1.8)) },
+        ]);
+        window.setTimeout(() => {
+          setSlashes((current) => current.filter((slash) => slash.id !== id));
+        }, 280);
+      }
+      previous.current = { x, y };
+    };
+    const handleLeave = () => {
+      previous.current = null;
+      setPointer((current) => ({ ...current, visible: false }));
+    };
+
+    window.addEventListener('pointermove', handleMove);
+    document.addEventListener('mouseleave', handleLeave);
+    return () => {
+      window.removeEventListener('pointermove', handleMove);
+      document.removeEventListener('mouseleave', handleLeave);
+    };
+  }, []);
+
+  return (
+    <div className="sword-cursor-layer" aria-hidden="true">
+      {slashes.map((slash) => (
+        <span
+          className="sword-slash"
+          key={slash.id}
+          style={{
+            left: slash.x,
+            top: slash.y,
+            width: slash.length,
+            transform: `translate(-50%, -50%) rotate(${slash.angle}deg)`,
+          }}
+        />
+      ))}
+      <span
+        className={`sword-cursor ${pointer.visible ? 'is-visible' : ''}`}
+        style={{
+          left: pointer.x,
+          top: pointer.y,
+          transform: `translate(-50%, -50%) rotate(${pointer.angle}deg)`,
+        }}
+      >
+        <i />
+      </span>
+    </div>
+  );
+}
+
+function TitleScreen({ onContinue, onOptions }: { onContinue: () => void; onOptions: () => void }) {
+  const [selected, setSelected] = useState(0);
+  const titleActions = [
+    { label: 'CONTINUE', hint: 'ENTER THE ARCHIVE' },
+    { label: 'LOAD PROFILE', hint: 'REVIEW THE RECORD' },
+    { label: 'SETTINGS', hint: 'INTERFACE OPTIONS' },
+  ];
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'ArrowDown' || event.key.toLowerCase() === 's') {
+        event.preventDefault();
+        setSelected((current) => (current + 1) % titleActions.length);
+      }
+      if (event.key === 'ArrowUp' || event.key.toLowerCase() === 'w') {
+        event.preventDefault();
+        setSelected((current) => (current - 1 + titleActions.length) % titleActions.length);
+      }
+      if (event.key === 'Enter') {
+        if (selected === 2) onOptions();
+        else onContinue();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onContinue, onOptions, selected, titleActions.length]);
+
+  return (
+    <motion.main
+      className="title-screen"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.65 }}
+    >
+      <Particles count={22} />
+      <div className="title-vignette" />
+      <div className="title-meta"><span>AS / FIELD ARCHIVE</span><span>VER. 2026.09</span></div>
+      <div className="title-watermark">葦</div>
+      <div className="title-content">
+        <div className="title-crest"><Crest /></div>
+        <div className="title-name">
+          <span>AKSHAY</span>
+          <strong>SURESH</strong>
+        </div>
+        <div className="title-rule" />
+        <div className="title-qualification">COMPUTER SCIENCE ENGINEER <i>/</i> FULL-STACK DEVELOPER</div>
+        <div className="title-location">VIT VELLORE · CSE · CGPA 9.24</div>
+        <nav className="title-actions" aria-label="Landing menu">
+          {titleActions.map((action, index) => (
+            <button
+              className={`title-action ${selected === index ? 'is-selected' : ''}`}
+              type="button"
+              key={action.label}
+              onClick={() => {
+                setSelected(index);
+                if (index === 2) onOptions();
+                else onContinue();
+              }}
+            >
+              <span>{action.label}</span>
+              <small>{action.hint}</small>
+            </button>
+          ))}
+        </nav>
+      </div>
+      <div className="title-footer"><span><kbd>W</kbd><kbd>S</kbd> SELECT</span><span><kbd>ENTER</kbd> CONFIRM</span><span>© 2026 AKSHAY SURESH</span></div>
+    </motion.main>
+  );
+}
+
 function MenuButton({
   item,
   selected,
@@ -373,6 +514,31 @@ function SignalPanel() {
   );
 }
 
+function EquipmentPanel() {
+  const equipment = [
+    { slot: 'PRIMARY ARM', title: 'REACT', detail: 'Component systems and interfaces built to feel immediate, clear, and alive.', icon: Code2 },
+    { slot: 'SECONDARY ARM', title: 'PYTHON', detail: 'Automation, AI experiments, and service logic that keeps the experience moving.', icon: Sparkles },
+    { slot: 'PROSTHETIC TOOL', title: 'DJANGO REST', detail: 'Structured APIs with authentication, permissions, and dependable data flow.', icon: ShieldCheck },
+    { slot: 'CURRENT QUEST', title: 'VIT VELLORE', detail: 'Computer Science Engineering student with a 9.24 CGPA.', icon: CircleDot },
+  ];
+
+  return (
+    <div className="content-panel equipment-panel">
+      <div className="panel-topline"><span>EQUIPMENT / LOADOUT</span><span className="status-dot"><CircleDot size={12} /> EQUIPPED</span></div>
+      <PanelTitle kicker="CURRENT ARMAMENT" title="The" accent=" arsenal" />
+      <div className="equipment-grid">
+        {equipment.map(({ slot, title, detail, icon: Icon }) => (
+          <div className="equipment-card" key={slot}>
+            <div className="equipment-icon"><Icon size={20} strokeWidth={1.3} /></div>
+            <div><span>{slot}</span><h2>{title}</h2><p>{detail}</p></div>
+            <b>READY</b>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function MainMenu() {
   const [menuIndex, setMenuIndex] = useState(0);
   const [projectIndex, setProjectIndex] = useState(0);
@@ -397,7 +563,10 @@ function MainMenu() {
       if (event.key === 'ArrowLeft' || event.key.toLowerCase() === 'a') {
         if (activeMenu.id === 'projects') setProjectIndex((current) => (current - 1 + projects.length) % projects.length);
       }
-      if (event.key === 'Escape') setShowOptions(false);
+      if (event.key === 'Escape') {
+        setShowOptions(false);
+        setTopTab('INVENTORY');
+      }
       if (event.key === 'Enter' && activeMenu.id === 'signal') {
         window.location.href = 'mailto:akshay47suresh@gmail.com';
       }
@@ -412,14 +581,22 @@ function MainMenu() {
       <div className="screen-vignette" />
       <div className="screen-scanlines" />
       <header className="game-header">
-        <button className="edge-control" type="button" onClick={() => setTopTab('EQUIPMENT')}><ArrowLeft size={14} /> L1</button>
+        <button className="edge-control" type="button" onClick={() => { setShowOptions(false); setTopTab('EQUIPMENT'); }}><ArrowLeft size={14} /> L1</button>
         <div className="top-tabs">
           {['EQUIPMENT', 'INVENTORY', 'OPTIONS'].map((tab) => (
             <button
               key={tab}
               type="button"
               className={topTab === tab ? 'active' : ''}
-              onClick={() => tab === 'OPTIONS' ? setShowOptions(true) : setTopTab(tab)}
+              onClick={() => {
+                if (tab === 'OPTIONS') {
+                  setTopTab('OPTIONS');
+                  setShowOptions(true);
+                } else {
+                  setShowOptions(false);
+                  setTopTab(tab);
+                }
+              }}
               data-testid={`button-tab-${tab.toLowerCase()}`}
             >
               {tab}
@@ -433,8 +610,8 @@ function MainMenu() {
         <aside className="menu-column">
           <div className="menu-heading"><Gamepad2 size={15} /><span>QUICK MENU</span></div>
           <div className="menu-buttons">
-            {menuItems.map((item) => (
-              <MenuButton key={item.id} item={item} selected={activeMenu.id === item.id} onSelect={() => setMenuIndex(menuItems.indexOf(item))} />
+             {menuItems.map((item) => (
+               <MenuButton key={item.id} item={item} selected={activeMenu.id === item.id} onSelect={() => { setShowOptions(false); setTopTab('INVENTORY'); setMenuIndex(menuItems.indexOf(item)); }} />
             ))}
           </div>
           <div className="menu-footer">
@@ -453,11 +630,12 @@ function MainMenu() {
               exit={{ opacity: 0, x: -10 }}
               transition={{ duration: 0.22 }}
             >
-              {activeMenu.id === 'projects' && <ProjectPanel selectedProject={projectIndex} onProjectChange={setProjectIndex} />}
-              {activeMenu.id === 'attributes' && <AttributesPanel />}
-              {activeMenu.id === 'memories' && <MemoriesPanel />}
-              {activeMenu.id === 'lore' && <LorePanel />}
-              {activeMenu.id === 'signal' && <SignalPanel />}
+               {topTab === 'EQUIPMENT' && <EquipmentPanel />}
+               {topTab !== 'EQUIPMENT' && activeMenu.id === 'projects' && <ProjectPanel selectedProject={projectIndex} onProjectChange={setProjectIndex} />}
+               {topTab !== 'EQUIPMENT' && activeMenu.id === 'attributes' && <AttributesPanel />}
+               {topTab !== 'EQUIPMENT' && activeMenu.id === 'memories' && <MemoriesPanel />}
+               {topTab !== 'EQUIPMENT' && activeMenu.id === 'lore' && <LorePanel />}
+               {topTab !== 'EQUIPMENT' && activeMenu.id === 'signal' && <SignalPanel />}
             </motion.div>
           </AnimatePresence>
         </section>
@@ -475,12 +653,12 @@ function MainMenu() {
       <AnimatePresence>
         {showOptions && (
           <motion.div className="options-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowOptions(false)}>
-            <motion.div className="options-panel" initial={{ y: 12 }} animate={{ y: 0 }} onClick={(event) => event.stopPropagation()}>
-              <div className="panel-topline"><span>OPTIONS</span><button type="button" onClick={() => setShowOptions(false)} aria-label="Close options"><X size={17} /></button></div>
+           <motion.div className="options-panel" initial={{ y: 12 }} animate={{ y: 0 }} onClick={(event) => event.stopPropagation()}>
+              <div className="panel-topline"><span>OPTIONS</span><button type="button" onClick={() => { setShowOptions(false); setTopTab('INVENTORY'); }} aria-label="Close options"><X size={17} /></button></div>
               <div className="option-row"><span>INTERFACE</span><b>GAME MENU</b><Check size={15} /></div>
               <div className="option-row"><span>MOTION</span><b>ENABLED</b><Check size={15} /></div>
               <div className="option-row"><span>INPUT</span><b>WASD / ARROWS</b><Check size={15} /></div>
-              <button className="game-action-button primary close-options" type="button" onClick={() => setShowOptions(false)}>RETURN TO MENU</button>
+              <button className="game-action-button primary close-options" type="button" onClick={() => { setShowOptions(false); setTopTab('INVENTORY'); }}>RETURN TO MENU</button>
             </motion.div>
           </motion.div>
         )}
@@ -490,11 +668,27 @@ function MainMenu() {
 }
 
 function Home() {
-  const [loading, setLoading] = useState(true);
+  const [screen, setScreen] = useState<'loading' | 'title' | 'menu'>('loading');
+  const [openTitleOptions, setOpenTitleOptions] = useState(false);
   return (
     <div className="portfolio-app">
-      <AnimatePresence>{loading && <LoadingScreen onComplete={() => setLoading(false)} />}</AnimatePresence>
-      {!loading && <MainMenu />}
+      <SwordCursor />
+      <AnimatePresence mode="wait">
+        {screen === 'loading' && <LoadingScreen key="loading" onComplete={() => setScreen('title')} />}
+        {screen === 'title' && !openTitleOptions && (
+          <TitleScreen key="title" onContinue={() => setScreen('menu')} onOptions={() => setOpenTitleOptions(true)} />
+        )}
+        {screen === 'title' && openTitleOptions && (
+          <motion.div className="title-options-backdrop" key="title-options" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <div className="title-options">
+              <div className="panel-topline"><span>SETTINGS</span><button type="button" onClick={() => setOpenTitleOptions(false)} aria-label="Close settings"><X size={17} /></button></div>
+              <p>Interface motion and input are ready for the archive.</p>
+              <button className="game-action-button primary" type="button" onClick={() => setOpenTitleOptions(false)}>RETURN</button>
+            </div>
+          </motion.div>
+        )}
+        {screen === 'menu' && <MainMenu key="menu" />}
+      </AnimatePresence>
     </div>
   );
 }
