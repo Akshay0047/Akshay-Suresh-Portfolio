@@ -2100,3 +2100,219 @@ kbd {
     flex: 1 1 145px;
   }
 }
+
+@keyframes menu-ambient {
+  0% {
+    background-position: 0% 0%, 100% 100%, 0 0;
+  }
+  50% {
+    background-position: 42% 28%, 64% 72%, 0 0;
+  }
+  100% {
+    background-position: 100% 70%, 0% 20%, 0 0;
+  }
+}
+
+@keyframes menu-sweep {
+  0% {
+    transform: translate3d(-70%, 12%, 0) rotate(-12deg);
+    opacity: 0;
+  }
+  18%,
+  68% {
+    opacity: 0.24;
+  }
+  100% {
+    transform: translate3d(115%, -12%, 0) rotate(-12deg);
+    opacity: 0;
+  }
+}
+
+@keyframes selected-edge {
+  0%,
+  100% {
+    opacity: 0.32;
+    transform: scaleY(0.55);
+  }
+  50% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
+.game-screen {
+  background:
+    radial-gradient(ellipse at 18% 22%, rgba(184, 111, 43, 0.16), transparent 29%),
+    radial-gradient(ellipse at 86% 76%, rgba(92, 119, 113, 0.14), transparent 33%),
+    linear-gradient(120deg, #181816 0%, #302d27 48%, #111210 100%);
+  background-size: 135% 135%, 125% 125%, 100% 100%;
+  animation: menu-ambient 16s ease-in-out infinite alternate;
+}
+
+.game-screen .particles::before {
+  position: absolute;
+  inset: -24%;
+  content: '';
+  background:
+    radial-gradient(ellipse at 23% 38%, rgba(211, 139, 61, 0.2), transparent 20%),
+    radial-gradient(ellipse at 77% 62%, rgba(109, 139, 131, 0.16), transparent 24%);
+  filter: blur(24px);
+  animation: menu-ambient 19s ease-in-out infinite alternate-reverse;
+}
+
+.game-screen .particles::after {
+  position: absolute;
+  top: -35%;
+  left: -18%;
+  width: 38%;
+  height: 170%;
+  content: '';
+  background: linear-gradient(90deg, transparent, rgba(238, 203, 142, 0.2), transparent);
+  filter: blur(18px);
+  transform: rotate(-12deg);
+  animation: menu-sweep 11s ease-in-out infinite;
+}
+
+.game-screen .content-panel {
+  background:
+    linear-gradient(135deg, rgba(202, 143, 73, 0.09), transparent 31%),
+    linear-gradient(320deg, rgba(96, 131, 122, 0.06), transparent 42%),
+    rgba(37, 36, 33, 0.93);
+  box-shadow:
+    inset 0 0 0 1px rgba(7, 7, 6, 0.18),
+    0 18px 48px rgba(0, 0, 0, 0.3),
+    0 0 38px rgba(176, 105, 42, 0.06);
+}
+
+.game-menu-button.is-selected::after {
+  position: absolute;
+  top: 12%;
+  right: 5px;
+  bottom: 12%;
+  width: 2px;
+  content: '';
+  background: linear-gradient(180deg, transparent, #f3d69b 50%, transparent);
+  box-shadow: 0 0 10px rgba(235, 181, 91, 0.7);
+  animation: selected-edge 1.7s ease-in-out infinite;
+}
+
+.game-body.is-equipment-view {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.inspect-column.is-equipment-view {
+  grid-column: 1 / -1;
+}
+
+.attributes-panel .attribute-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: center;
+  gap: 14px 24px;
+  max-width: none;
+  margin-top: 18px;
+  overflow-y: auto;
+  padding-right: 6px;
+  scrollbar-color: var(--amber) rgba(23, 22, 20, 0.6);
+  scrollbar-width: thin;
+}
+
+.attributes-panel .attribute-row {
+  grid-template-columns: minmax(92px, 0.7fr) minmax(46px, 1fr) 27px;
+  gap: 10px;
+  min-width: 0;
+}
+
+.memory-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-top: clamp(18px, 4vh, 32px);
+  overflow-y: auto;
+  padding-right: 10px;
+  scrollbar-color: var(--amber) rgba(23, 22, 20, 0.6);
+  scrollbar-width: thin;
+}
+
+.memory-entry {
+  flex-shrink: 0;
+  padding: 14px 0;
+}
+
+.sword-cursor {
+  width: 18px;
+  height: 25px;
+  background: linear-gradient(145deg, #d2a04e 0%, #9a6829 68%, #6c431e 100%);
+  border: 0;
+  clip-path: polygon(0 0, 0 100%, 30% 73%, 47% 100%, 60% 93%, 43% 66%, 91% 66%);
+  filter: drop-shadow(0 0 3px rgba(214, 157, 67, 0.7)) drop-shadow(1px 2px 1px rgba(0, 0, 0, 0.8));
+}
+
+.sword-cursor::before,
+.sword-cursor::after,
+.sword-cursor i {
+  display: none;
+}
+
+.sword-slash {
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.2) 8%,
+    #fffdf3 27%,
+    #ffffff 50%,
+    #fffdf3 73%,
+    rgba(255, 255, 255, 0.2) 92%,
+    transparent 100%
+  );
+  animation: pointer-slash 640ms cubic-bezier(0.18, 0.78, 0.2, 1) forwards;
+  filter: blur(0.15px) drop-shadow(0 0 5px rgba(255, 255, 255, 0.72)) drop-shadow(0 0 12px rgba(213, 155, 88, 0.4));
+}
+
+@media (max-width: 800px) {
+  .game-body.is-equipment-view {
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .attributes-panel .attribute-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
+    gap: 10px 12px;
+    margin-top: 17px;
+    padding: 12px 0 0;
+    border-top: 1px solid var(--amber);
+    border-left: 0;
+  }
+
+  .attributes-panel .attribute-row {
+    grid-template-columns: minmax(70px, 0.95fr) minmax(24px, 1fr) 20px;
+    gap: 6px;
+  }
+
+  .memory-list {
+    margin-top: 14px;
+    padding-right: 6px;
+  }
+
+  .memory-entry {
+    padding: 9px 0;
+  }
+
+  .equipment-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  .equipment-card {
+    min-height: 112px;
+    padding: 11px;
+    grid-template-columns: 29px 1fr;
+    gap: 8px;
+  }
+
+  .equipment-card p {
+    max-width: none;
+    font-size: 7px;
+    line-height: 1.35;
+  }
+}

@@ -240,7 +240,15 @@ function SwordCursor() {
       setPointer({ x, y, visible: true });
       if (last && distance > 5) {
         const id = nextId.current++;
-        setSlash({ id, x, y, angle, length: Math.min(120, Math.max(26, distance * 1.8)) });
+        const length = Math.min(260, Math.max(72, distance * 4.8));
+        const radians = (angle * Math.PI) / 180;
+        setSlash({
+          id,
+          x: x - Math.cos(radians) * length * 0.5,
+          y: y - Math.sin(radians) * length * 0.5,
+          angle,
+          length,
+        });
       }
       previous.current = { x, y };
     };
@@ -277,7 +285,7 @@ function SwordCursor() {
         style={{
           left: pointer.x,
           top: pointer.y,
-          transform: 'translate(-50%, -50%)',
+          transform: 'translate(-10%, -8%)',
         }}
       >
       </span>
@@ -332,7 +340,7 @@ function TitleScreen({ onContinue, onOptions }: { onContinue: () => void; onOpti
         </div>
         <div className="title-rule" />
         <div className="title-qualification">COMPUTER SCIENCE ENGINEER <i>/</i> FULL-STACK DEVELOPER</div>
-        <div className="title-location">VIT VELLORE · CSE · CGPA 9.24</div>
+        <div className="title-location">VIT VELLORE · CSE</div>
         <nav className="title-actions" aria-label="Landing menu">
           {titleActions.map((action, index) => (
             <button
@@ -639,8 +647,8 @@ function MainMenu({ onReturnToLanding }: { onReturnToLanding: () => void }) {
         <button className="edge-control" type="button" onClick={() => { setTopTab('OPTIONS'); setShowOptions(true); }}>R1 <ArrowRight size={14} /></button>
       </header>
 
-      <div className="game-body">
-        <aside className="menu-column">
+      <div className={`game-body ${topTab === 'EQUIPMENT' ? 'is-equipment-view' : ''}`}>
+        {topTab !== 'EQUIPMENT' && <aside className="menu-column">
           <div className="menu-heading"><Gamepad2 size={15} /><span>QUICK MENU</span></div>
           <div className="menu-buttons">
              {menuItems.map((item) => (
@@ -651,12 +659,12 @@ function MainMenu({ onReturnToLanding }: { onReturnToLanding: () => void }) {
             <div><span className="health-label">VITALITY</span><span className="health-track"><i /></span><b>100</b></div>
             <div><span className="health-label">FOCUS</span><span className="focus-track"><i /></span><b>08</b></div>
           </div>
-        </aside>
+        </aside>}
 
-        <section className="inspect-column" aria-live="polite">
+        <section className={`inspect-column ${topTab === 'EQUIPMENT' ? 'is-equipment-view' : ''}`} aria-live="polite">
           <AnimatePresence mode="wait">
             <motion.div
-              key={activeMenu.id}
+              key={`${topTab}-${activeMenu.id}`}
               className="panel-wrapper"
               initial={{ opacity: 0, x: 14 }}
               animate={{ opacity: 1, x: 0 }}
