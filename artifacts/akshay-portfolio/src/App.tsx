@@ -361,12 +361,29 @@ type ArcadeSplash = {
   color: string;
 };
 
+type ArcadeSplatDrop = {
+  angle: number;
+  distance: number;
+  size: number;
+  stretch: number;
+};
+
+type ArcadeSplatStreak = {
+  angle: number;
+  distance: number;
+  length: number;
+  width: number;
+};
+
 type ArcadeMark = {
   x: number;
   y: number;
   rotation: number;
   scale: number;
   color: string;
+  lobes: Array<{ x: number; y: number }>;
+  drops: ArcadeSplatDrop[];
+  streaks: ArcadeSplatStreak[];
 };
 
 function distanceToSegment(
@@ -426,12 +443,33 @@ function FruitArcade() {
 
     const addSplash = (item: ArcadeObject, angle: number) => {
       const splashColor = item.kind === 'bomb' ? '#d59b58' : item.color;
+      const lobeCount = 18;
       marks.current.push({
         x: item.x,
         y: item.y,
         rotation: angle,
         scale: 1.1 + Math.random() * 0.48,
         color: splashColor,
+        lobes: Array.from({ length: lobeCount }, (_, index) => {
+          const direction = (Math.PI * 2 * index) / lobeCount;
+          const radius = 24 + Math.random() * 26;
+          return {
+            x: Math.cos(direction) * radius,
+            y: Math.sin(direction) * (radius * (0.62 + Math.random() * 0.34)),
+          };
+        }),
+        drops: Array.from({ length: 17 }, (_, index) => ({
+          angle: (Math.PI * 2 * index) / 17 + (Math.random() - 0.5) * 0.24,
+          distance: 34 + Math.random() * 53,
+          size: 2.3 + Math.random() * 5.2,
+          stretch: 1.2 + Math.random() * 2.2,
+        })),
+        streaks: Array.from({ length: 7 }, (_, index) => ({
+          angle: (Math.PI * 2 * index) / 7 + (Math.random() - 0.5) * 0.32,
+          distance: 20 + Math.random() * 28,
+          length: 12 + Math.random() * 23,
+          width: 2 + Math.random() * 3.5,
+        })),
       });
       for (let index = 0; index < 42; index += 1) {
         const direction = (Math.PI * 2 * index) / 42 + Math.random() * 0.55;
@@ -570,16 +608,32 @@ function FruitArcade() {
       context.shadowColor = mark.color;
       context.shadowBlur = 18;
       context.beginPath();
-      context.ellipse(0, 0, 43, 23, 0, 0, Math.PI * 2);
+      mark.lobes.forEach((point, index) => {
+        if (index === 0) context.moveTo(point.x, point.y);
+        else context.lineTo(point.x, point.y);
+      });
+      context.closePath();
       context.fill();
-      for (let index = 0; index < 15; index += 1) {
-        const direction = (Math.PI * 2 * index) / 15;
-        const distance = 32 + (index % 4) * 9;
-        const size = 2.5 + (index % 4) * 1.8;
+      context.globalAlpha = 0.72;
+      mark.streaks.forEach((streak) => {
+        context.save();
+        context.rotate(streak.angle);
+        context.translate(streak.distance, 0);
         context.beginPath();
-        context.arc(Math.cos(direction) * distance, Math.sin(direction) * distance, size, 0, Math.PI * 2);
+        context.ellipse(streak.length / 2, 0, streak.length / 2, streak.width, 0, 0, Math.PI * 2);
         context.fill();
-      }
+        context.restore();
+      });
+      context.globalAlpha = 0.88;
+      mark.drops.forEach((drop) => {
+        context.save();
+        context.rotate(drop.angle);
+        context.translate(drop.distance, 0);
+        context.beginPath();
+        context.ellipse(0, 0, drop.size * drop.stretch, drop.size, 0, 0, Math.PI * 2);
+        context.fill();
+        context.restore();
+      });
       context.restore();
     };
 
@@ -626,13 +680,25 @@ function FruitArcade() {
 
       objects.current.forEach(drawFruit);
       splashes.current.forEach((particle) => {
+        context.save();
+        context.translate(particle.x, particle.y);
+        context.rotate(Math.atan2(particle.vy, particle.vx));
         context.beginPath();
-        context.arc(particle.x, particle.y, particle.size * particle.life, 0, Math.PI * 2);
+        context.ellipse(
+          0,
+          0,
+          particle.size * particle.life * 1.55,
+          particle.size * particle.life * 0.62,
+          0,
+          0,
+          Math.PI * 2,
+        );
         context.fillStyle = particle.color;
         context.globalAlpha = particle.life;
         context.shadowColor = particle.color;
         context.shadowBlur = 10;
         context.fill();
+        context.restore();
         context.globalAlpha = 1;
         context.shadowBlur = 0;
       });
