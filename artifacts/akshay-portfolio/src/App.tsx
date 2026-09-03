@@ -369,13 +369,6 @@ type ArcadeMark = {
   color: string;
 };
 
-type ArcadeBurst = {
-  x: number;
-  y: number;
-  angle: number;
-  life: number;
-};
-
 function distanceToSegment(
   pointX: number,
   pointY: number,
@@ -400,9 +393,9 @@ function FruitArcade() {
   const objects = useRef<ArcadeObject[]>([]);
   const splashes = useRef<ArcadeSplash[]>([]);
   const marks = useRef<ArcadeMark[]>([]);
-  const bursts = useRef<ArcadeBurst[]>([]);
   const pointer = useRef<{ x: number; y: number } | null>(null);
   const objectId = useRef(0);
+  const lastActivity = useRef(0);
   const activeRef = useRef(false);
   const [active, setActive] = useState(false);
   const [gameOver, setGameOver] = useState(false);
@@ -414,8 +407,8 @@ function FruitArcade() {
       objects.current = [];
       splashes.current = [];
       marks.current = [];
-      bursts.current = [];
       pointer.current = null;
+      lastActivity.current = 0;
     }
   }, [active]);
 
@@ -453,7 +446,6 @@ function FruitArcade() {
           color: splashColor,
         });
       }
-      bursts.current.push({ x: item.x, y: item.y, angle, life: 1.35 });
     };
 
     const sliceObject = (item: ArcadeObject, angle: number) => {
@@ -471,6 +463,7 @@ function FruitArcade() {
     const handleMove = (event: PointerEvent) => {
       const next = { x: event.clientX, y: event.clientY };
       const previous = pointer.current;
+      if (activeRef.current) lastActivity.current = performance.now();
       if (activeRef.current && previous) {
         objects.current.forEach((item) => {
           if (
@@ -601,16 +594,24 @@ function FruitArcade() {
       context.clearRect(0, 0, width, height);
 
       if (activeRef.current) {
-        if (!lastSpawn || time - lastSpawn > 610) lastSpawn = spawnWave(time);
-        objects.current.forEach((item) => {
-          if (!item.sliced) {
-            item.x += item.vx * delta;
-            item.y += item.vy * delta;
-            item.vy += item.gravity * delta;
-            item.rotation += item.spin * delta;
-          }
-        });
-        objects.current = objects.current.filter((item) => !item.sliced && item.y < height + 90);
+        if (lastActivity.current && time - lastActivity.current > 20000) {
+          activeRef.current = false;
+          objects.current = [];
+          pointer.current = null;
+          setGameOver(true);
+        }
+        if (activeRef.current) {
+          if (!lastSpawn || time - lastSpawn > 610) lastSpawn = spawnWave(time);
+          objects.current.forEach((item) => {
+            if (!item.sliced) {
+              item.x += item.vx * delta;
+              item.y += item.vy * delta;
+              item.vy += item.gravity * delta;
+              item.rotation += item.spin * delta;
+            }
+          });
+          objects.current = objects.current.filter((item) => !item.sliced && item.y < height + 90);
+        }
       }
 
       marks.current.forEach(drawMark);
@@ -622,11 +623,6 @@ function FruitArcade() {
         particle.life -= 0.018 * delta;
       });
       splashes.current = splashes.current.filter((particle) => particle.life > 0);
-
-      bursts.current.forEach((burst) => {
-        burst.life -= 0.028 * delta;
-      });
-      bursts.current = bursts.current.filter((burst) => burst.life > 0);
 
       objects.current.forEach(drawFruit);
       splashes.current.forEach((particle) => {
@@ -640,27 +636,6 @@ function FruitArcade() {
         context.globalAlpha = 1;
         context.shadowBlur = 0;
       });
-      bursts.current.forEach((burst) => {
-        context.save();
-        context.translate(burst.x, burst.y);
-        context.rotate(burst.angle);
-        context.globalAlpha = burst.life;
-        context.strokeStyle = '#fffdf3';
-        context.shadowColor = '#ffffff';
-        context.shadowBlur = 16;
-        context.lineWidth = 3 + burst.life * 8;
-        context.beginPath();
-        context.moveTo(-88 * burst.life, 0);
-        context.lineTo(88 * burst.life, 0);
-        context.stroke();
-        context.globalAlpha = burst.life * 0.72;
-        context.lineWidth = 2.5;
-        context.beginPath();
-        context.arc(0, 0, 20 + (1 - burst.life) * 58, 0, Math.PI * 2);
-        context.stroke();
-        context.restore();
-      });
-
       animationFrame = window.requestAnimationFrame(render);
     };
 
@@ -683,8 +658,8 @@ function FruitArcade() {
     objects.current = [];
     splashes.current = [];
     marks.current = [];
-    bursts.current = [];
     pointer.current = null;
+    lastActivity.current = performance.now();
     setGameOver(false);
     setScore(0);
     setActive(true);
@@ -692,6 +667,7 @@ function FruitArcade() {
 
   const exitArcade = () => {
     activeRef.current = false;
+    lastActivity.current = 0;
     setGameOver(false);
     setActive(false);
   };
@@ -708,11 +684,11 @@ function FruitArcade() {
     <>
       <canvas ref={canvasRef} className={`fruit-game-canvas ${active ? 'is-active' : ''}`} aria-hidden="true" />
       {active && gameOver && (
-        <div className="fruit-game-over" role="dialog" aria-modal="true" aria-label="Fruit game over">
-          <div className="fruit-game-over-card">
-            <strong>GAME OVER</strong>
-            <span>THE BLADE FOUND A BOMB</span>
-            <div className="fruit-game-over-actions">
+        <div className="fruit-death-screen" role="dialog" aria-modal="true" aria-label="Death">
+          <div className="fruit-death-card">
+            <span className="death-kanji" aria-hidden="true">死</span>
+            <span className="death-label">DEATH</span>
+            <div className="fruit-death-actions">
               <button className="game-action-button primary" type="button" onClick={startArcade}>PLAY AGAIN</button>
               <button className="game-action-button" type="button" onClick={exitArcade}>EXIT</button>
             </div>
