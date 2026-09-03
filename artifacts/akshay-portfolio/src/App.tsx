@@ -31,6 +31,8 @@ const profileLinks = {
   linkedin: 'https://www.linkedin.com/in/akshay47suresh',
 };
 
+const combatArtSrc = `${import.meta.env.BASE_URL}combat-art.png`;
+
 type Project = {
   index: string;
   title: string;
@@ -40,6 +42,7 @@ type Project = {
   stack: string[];
   detail: string;
   metric: string;
+  repoUrl?: string;
 };
 
 const projects: Project[] = [
@@ -52,6 +55,7 @@ const projects: Project[] = [
     stack: ['React', 'Django REST', 'MongoDB', 'JWT'],
     detail: 'Manual JWT validation protected API endpoints while working around MongoDB ObjectId compatibility with Django ORM.',
     metric: 'SECURE ACCESS',
+    repoUrl: 'https://github.com/Akshay0047/Authentication-Profile-Management-Application',
   },
   {
     index: '02',
@@ -62,6 +66,7 @@ const projects: Project[] = [
     stack: ['React', 'Redux Toolkit', 'Django REST', 'MongoDB'],
     detail: 'Added bcrypt hashing, httpOnly cookies, and an Axios token-refresh interceptor. Identified and fixed broken access control.',
     metric: 'FULL CRUD',
+    repoUrl: 'https://github.com/Akshay0047/User-Management-System',
   },
   {
     index: '03',
@@ -72,6 +77,7 @@ const projects: Project[] = [
     stack: ['Python', 'Discord.py', 'Gemini API'],
     detail: 'Combined AI-assisted responses with reminders, timers, automated replies, music playback, utility commands, and server moderation.',
     metric: 'AI / AUTOMATION',
+    repoUrl: 'https://github.com/Akshay0047/DiscordBot-Pookie',
   },
   {
     index: '04',
@@ -92,6 +98,7 @@ const projects: Project[] = [
     stack: ['JavaScript', 'Node.js', 'DOM'],
     detail: 'Created multiple browser games focused on JavaScript logic, event handling, DOM manipulation, problem solving, and user interaction design.',
     metric: 'GAME LOGIC',
+    repoUrl: 'https://github.com/Akshay0047/Car-Racing-Game',
   },
 ];
 
@@ -430,23 +437,23 @@ function FruitArcade() {
         x: item.x,
         y: item.y,
         rotation: angle,
-        scale: 0.72 + Math.random() * 0.34,
+        scale: 1.1 + Math.random() * 0.48,
         color: splashColor,
       });
-      for (let index = 0; index < 30; index += 1) {
-        const direction = (Math.PI * 2 * index) / 30 + Math.random() * 0.55;
-        const speed = 2.5 + Math.random() * 6.5;
+      for (let index = 0; index < 42; index += 1) {
+        const direction = (Math.PI * 2 * index) / 42 + Math.random() * 0.55;
+        const speed = 3 + Math.random() * 8;
         splashes.current.push({
           x: item.x,
           y: item.y,
           vx: Math.cos(direction) * speed,
           vy: Math.sin(direction) * speed - 2.5,
-          life: 1.2,
-          size: 2 + Math.random() * 5,
+          life: 1.4,
+          size: 2.5 + Math.random() * 6,
           color: splashColor,
         });
       }
-      bursts.current.push({ x: item.x, y: item.y, angle, life: 1.2 });
+      bursts.current.push({ x: item.x, y: item.y, angle, life: 1.35 });
     };
 
     const sliceObject = (item: ArcadeObject, angle: number) => {
@@ -565,17 +572,17 @@ function FruitArcade() {
       context.translate(mark.x, mark.y);
       context.rotate(mark.rotation);
       context.scale(mark.scale, mark.scale);
-      context.globalAlpha = 0.86;
+      context.globalAlpha = 0.94;
       context.fillStyle = mark.color;
       context.shadowColor = mark.color;
-      context.shadowBlur = 10;
+      context.shadowBlur = 18;
       context.beginPath();
-      context.ellipse(0, 0, 24, 13, 0, 0, Math.PI * 2);
+      context.ellipse(0, 0, 43, 23, 0, 0, Math.PI * 2);
       context.fill();
-      for (let index = 0; index < 9; index += 1) {
-        const direction = (Math.PI * 2 * index) / 9;
-        const distance = 19 + (index % 3) * 6;
-        const size = 2 + (index % 3) * 1.5;
+      for (let index = 0; index < 15; index += 1) {
+        const direction = (Math.PI * 2 * index) / 15;
+        const distance = 32 + (index % 4) * 9;
+        const size = 2.5 + (index % 4) * 1.8;
         context.beginPath();
         context.arc(Math.cos(direction) * distance, Math.sin(direction) * distance, size, 0, Math.PI * 2);
         context.fill();
@@ -683,11 +690,15 @@ function FruitArcade() {
     setActive(true);
   };
 
+  const exitArcade = () => {
+    activeRef.current = false;
+    setGameOver(false);
+    setActive(false);
+  };
+
   const toggleArcade = () => {
     if (active) {
-      activeRef.current = false;
-      setGameOver(false);
-      setActive(false);
+      exitArcade();
       return;
     }
     startArcade();
@@ -697,10 +708,16 @@ function FruitArcade() {
     <>
       <canvas ref={canvasRef} className={`fruit-game-canvas ${active ? 'is-active' : ''}`} aria-hidden="true" />
       {active && gameOver && (
-        <button className="fruit-game-over" type="button" onClick={startArcade}>
-          <strong>GAME OVER</strong>
-          <span>CLICK TO PLAY AGAIN</span>
-        </button>
+        <div className="fruit-game-over" role="dialog" aria-modal="true" aria-label="Fruit game over">
+          <div className="fruit-game-over-card">
+            <strong>GAME OVER</strong>
+            <span>THE BLADE FOUND A BOMB</span>
+            <div className="fruit-game-over-actions">
+              <button className="game-action-button primary" type="button" onClick={startArcade}>PLAY AGAIN</button>
+              <button className="game-action-button" type="button" onClick={exitArcade}>EXIT</button>
+            </div>
+          </div>
+        </div>
       )}
       <button
         className={`fruit-trigger ${active ? 'is-active' : ''}`}
@@ -843,7 +860,10 @@ function ProjectPanel({
       </div>
       <div className="project-inspect">
         <div className="item-emblem">
-          <div className="emblem-diamond"><Code2 size={34} strokeWidth={1} /></div>
+          <div className="combat-art-frame">
+            <img src={combatArtSrc} alt="" />
+            <span>{project.index}</span>
+          </div>
           <span>COMBAT ART</span>
         </div>
         <div className="item-copy">
@@ -854,6 +874,9 @@ function ProjectPanel({
           <div className="stack-list">
             {project.stack.map((tech) => <span key={tech}>{tech}</span>)}
           </div>
+          <a className="project-repo-link" href={project.repoUrl ?? profileLinks.github} target="_blank" rel="noreferrer">
+            <Github size={14} /> {project.repoUrl ? 'OPEN GITHUB REPOSITORY' : 'BROWSE GITHUB PROFILE'}
+          </a>
         </div>
       </div>
       <div className="project-detail">{project.detail}</div>
