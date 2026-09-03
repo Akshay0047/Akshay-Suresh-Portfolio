@@ -8,7 +8,9 @@ import {
   Check,
   CircleDot,
   Code2,
+  Github,
   Gamepad2,
+  Linkedin,
   Mail,
   ShieldCheck,
   Sparkles,
@@ -23,6 +25,11 @@ import { Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
 const queryClient = new QueryClient();
 
 type MenuId = 'projects' | 'attributes' | 'memories' | 'lore' | 'signal';
+
+const profileLinks = {
+  github: 'https://github.com/Akshay0047',
+  linkedin: 'https://www.linkedin.com/in/akshay47suresh',
+};
 
 type Project = {
   index: string;
@@ -41,7 +48,7 @@ const projects: Project[] = [
     title: 'Authentication & Profile',
     type: 'FULL-STACK SYSTEM',
     year: '2025',
-    description: 'Secure registration, login, and profile management with a responsive React frontend.',
+    description: 'Secure registration, login, profile viewing, and profile editing with a responsive React frontend.',
     stack: ['React', 'Django REST', 'MongoDB', 'JWT'],
     detail: 'Manual JWT validation protected API endpoints while working around MongoDB ObjectId compatibility with Django ORM.',
     metric: 'SECURE ACCESS',
@@ -63,7 +70,7 @@ const projects: Project[] = [
     year: '2024',
     description: 'A multifunctional Discord bot with intelligent queries, reminders, timers, and moderation.',
     stack: ['Python', 'Discord.py', 'Gemini API'],
-    detail: 'Combined AI-assisted responses with music playback, utility commands, reminders, and server moderation.',
+    detail: 'Combined AI-assisted responses with reminders, timers, automated replies, music playback, utility commands, and server moderation.',
     metric: 'AI / AUTOMATION',
   },
   {
@@ -73,7 +80,7 @@ const projects: Project[] = [
     year: '2024',
     description: 'Real-time emotion detection that turns facial signals into music recommendations.',
     stack: ['Python', 'Machine Learning', 'Computer Vision'],
-    detail: 'Used webcam input and facial landmark mapping to classify emotions and trigger dynamic YouTube searches.',
+    detail: 'Used webcam input and facial landmark mapping to train a model that classifies emotions and triggers dynamic YouTube searches.',
     metric: 'REAL-TIME ML',
   },
   {
@@ -83,20 +90,33 @@ const projects: Project[] = [
     year: '2023–24',
     description: 'Browser games built to sharpen logic, event handling, and interaction design.',
     stack: ['JavaScript', 'Node.js', 'DOM'],
-    detail: 'A collection of small experiments focused on game loops, timing, feedback, and the weight of a good button.',
+    detail: 'Created multiple browser games focused on JavaScript logic, event handling, DOM manipulation, problem solving, and user interaction design.',
     metric: 'GAME LOGIC',
   },
 ];
 
 const attributes = [
-  { name: 'REACT', value: 89, note: 'interfaces / systems' },
-  { name: 'JAVASCRIPT', value: 86, note: 'interaction / web' },
+  { name: 'C', value: 64, note: 'systems / fundamentals' },
+  { name: 'C++', value: 66, note: 'logic / performance' },
   { name: 'PYTHON', value: 84, note: 'logic / services' },
-  { name: 'DJANGO REST', value: 81, note: 'apis / architecture' },
-  { name: 'REDUX TOOLKIT', value: 77, note: 'state / scale' },
-  { name: 'MONGODB', value: 73, note: 'data / modeling' },
-  { name: 'NODE.JS', value: 72, note: 'runtime / tooling' },
   { name: 'JAVA', value: 68, note: 'object-oriented logic' },
+  { name: 'JAVASCRIPT', value: 86, note: 'interaction / web' },
+  { name: 'ASSEMBLY', value: 51, note: 'low-level concepts' },
+  { name: 'MATLAB', value: 55, note: 'numerical / modeling' },
+  { name: 'HTML5', value: 84, note: 'structure / semantics' },
+  { name: 'CSS3', value: 82, note: 'layout / visual systems' },
+  { name: 'NODE.JS', value: 72, note: 'runtime / tooling' },
+  { name: 'REACT.JS', value: 89, note: 'interfaces / systems' },
+  { name: 'REDUX TOOLKIT', value: 77, note: 'state / scale' },
+  { name: 'DJANGO REST', value: 81, note: 'apis / architecture' },
+  { name: 'MYSQL', value: 64, note: 'relational / data' },
+  { name: 'MONGODB', value: 73, note: 'data / modeling' },
+  { name: 'GIT', value: 80, note: 'branches / history' },
+  { name: 'GITHUB', value: 78, note: 'code / collaboration' },
+  { name: 'DISCORD API', value: 70, note: 'bots / communities' },
+  { name: 'GEMINI API', value: 71, note: 'intelligence / prompts' },
+  { name: 'BLENDER', value: 57, note: 'basic 3d modeling' },
+  { name: 'VIDEO EDITING', value: 56, note: 'cuts / motion' },
 ];
 
 const skillCategories = {
@@ -334,6 +354,14 @@ type ArcadeSplash = {
   color: string;
 };
 
+type ArcadeMark = {
+  x: number;
+  y: number;
+  rotation: number;
+  scale: number;
+  color: string;
+};
+
 type ArcadeBurst = {
   x: number;
   y: number;
@@ -364,11 +392,13 @@ function FruitArcade() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const objects = useRef<ArcadeObject[]>([]);
   const splashes = useRef<ArcadeSplash[]>([]);
+  const marks = useRef<ArcadeMark[]>([]);
   const bursts = useRef<ArcadeBurst[]>([]);
   const pointer = useRef<{ x: number; y: number } | null>(null);
   const objectId = useRef(0);
   const activeRef = useRef(false);
   const [active, setActive] = useState(false);
+  const [gameOver, setGameOver] = useState(false);
   const [score, setScore] = useState(0);
 
   useEffect(() => {
@@ -376,6 +406,7 @@ function FruitArcade() {
     if (!active) {
       objects.current = [];
       splashes.current = [];
+      marks.current = [];
       bursts.current = [];
       pointer.current = null;
     }
@@ -395,6 +426,13 @@ function FruitArcade() {
 
     const addSplash = (item: ArcadeObject, angle: number) => {
       const splashColor = item.kind === 'bomb' ? '#d59b58' : item.color;
+      marks.current.push({
+        x: item.x,
+        y: item.y,
+        rotation: angle,
+        scale: 0.72 + Math.random() * 0.34,
+        color: splashColor,
+      });
       for (let index = 0; index < 30; index += 1) {
         const direction = (Math.PI * 2 * index) / 30 + Math.random() * 0.55;
         const speed = 2.5 + Math.random() * 6.5;
@@ -414,7 +452,13 @@ function FruitArcade() {
     const sliceObject = (item: ArcadeObject, angle: number) => {
       item.sliced = true;
       addSplash(item, angle);
-      setScore((current) => Math.max(0, current + (item.kind === 'bomb' ? -3 : 1)));
+      if (item.kind === 'bomb') {
+        activeRef.current = false;
+        objects.current = [];
+        setGameOver(true);
+        return;
+      }
+      setScore((current) => current + 1);
     };
 
     const handleMove = (event: PointerEvent) => {
@@ -423,6 +467,7 @@ function FruitArcade() {
       if (activeRef.current && previous) {
         objects.current.forEach((item) => {
           if (
+            activeRef.current &&
             !item.sliced &&
             distanceToSegment(item.x, item.y, previous.x, previous.y, next.x, next.y) <= item.radius + 12
           ) {
@@ -515,6 +560,29 @@ function FruitArcade() {
       context.restore();
     };
 
+    const drawMark = (mark: ArcadeMark) => {
+      context.save();
+      context.translate(mark.x, mark.y);
+      context.rotate(mark.rotation);
+      context.scale(mark.scale, mark.scale);
+      context.globalAlpha = 0.86;
+      context.fillStyle = mark.color;
+      context.shadowColor = mark.color;
+      context.shadowBlur = 10;
+      context.beginPath();
+      context.ellipse(0, 0, 24, 13, 0, 0, Math.PI * 2);
+      context.fill();
+      for (let index = 0; index < 9; index += 1) {
+        const direction = (Math.PI * 2 * index) / 9;
+        const distance = 19 + (index % 3) * 6;
+        const size = 2 + (index % 3) * 1.5;
+        context.beginPath();
+        context.arc(Math.cos(direction) * distance, Math.sin(direction) * distance, size, 0, Math.PI * 2);
+        context.fill();
+      }
+      context.restore();
+    };
+
     let lastSpawn = 0;
     let lastFrame = performance.now();
     let animationFrame = 0;
@@ -538,6 +606,7 @@ function FruitArcade() {
         objects.current = objects.current.filter((item) => !item.sliced && item.y < height + 90);
       }
 
+      marks.current.forEach(drawMark);
       splashes.current.forEach((particle) => {
         particle.x += particle.vx * delta;
         particle.y += particle.vy * delta;
@@ -602,14 +671,37 @@ function FruitArcade() {
     };
   }, []);
 
+  const startArcade = () => {
+    activeRef.current = true;
+    objects.current = [];
+    splashes.current = [];
+    marks.current = [];
+    bursts.current = [];
+    pointer.current = null;
+    setGameOver(false);
+    setScore(0);
+    setActive(true);
+  };
+
   const toggleArcade = () => {
-    setActive((current) => !current);
-    if (!active) setScore(0);
+    if (active) {
+      activeRef.current = false;
+      setGameOver(false);
+      setActive(false);
+      return;
+    }
+    startArcade();
   };
 
   return (
     <>
       <canvas ref={canvasRef} className={`fruit-game-canvas ${active ? 'is-active' : ''}`} aria-hidden="true" />
+      {active && gameOver && (
+        <button className="fruit-game-over" type="button" onClick={startArcade}>
+          <strong>GAME OVER</strong>
+          <span>CLICK TO PLAY AGAIN</span>
+        </button>
+      )}
       <button
         className={`fruit-trigger ${active ? 'is-active' : ''}`}
         type="button"
@@ -831,13 +923,45 @@ function MemoriesPanel() {
       <div className="panel-topline"><span>MEMORY FRAGMENTS / CHRONICLE</span><span className="status-dot"><CircleDot size={12} /> INDEXED</span></div>
       <PanelTitle kicker="RECORDED PATH" title="The" accent=" chronicle" />
       <div className="memory-list">
+        <div className="memory-section-label">EXPERIENCE</div>
         <div className="memory-entry">
           <span className="memory-date">JUN — JUL 2026</span>
           <div><h2>Full-stack development intern</h2><p>Antlegs Technology Solutions Pvt. Ltd.</p><small>Built authentication, profile, and user management applications with React, Django REST Framework, and MongoDB.</small></div>
         </div>
+        <div className="memory-section-label">EDUCATION</div>
         <div className="memory-entry">
-          <span className="memory-date">2022 — PRESENT</span>
+          <span className="memory-date">2024 — PRESENT</span>
           <div><h2>Computer Science Engineering</h2><p>VIT Vellore · CGPA 9.24</p><small>Building a strong foundation across software engineering, algorithms, systems, and the practical craft of turning ideas into useful products.</small></div>
+        </div>
+        <div className="memory-entry compact-entry">
+          <span className="memory-date">JEE MAIN 2024</span>
+          <div><h2>96.66 percentile</h2><p>Qualified</p></div>
+        </div>
+        <div className="memory-entry compact-entry">
+          <span className="memory-date">2024 / CBSE XII</span>
+          <div><h2>Senior Secondary</h2><p>SFS Public School, Kottayam · 97.4%</p></div>
+        </div>
+        <div className="memory-entry compact-entry">
+          <span className="memory-date">2022 / ICSE X</span>
+          <div><h2>Secondary</h2><p>Pallikoodam, Kottayam · 93%</p></div>
+        </div>
+        <div className="memory-section-label">CERTIFICATIONS</div>
+        <div className="memory-entry compact-entry">
+          <span className="memory-date">CERTIFIED</span>
+          <div><h2>Developer foundations</h2><p>Junior Developer Certification · App Developer Certification — WhiteHat Jr</p><small>HTML, CSS, JavaScript, React — Online Certification Course · Udemy</small></div>
+        </div>
+        <div className="memory-section-label">ACHIEVEMENTS / ACTIVITIES</div>
+        <div className="memory-entry compact-entry">
+          <span className="memory-date">IEEE COMPUTER SOCIETY</span>
+          <div><h2>3rd place — Where&apos;s The Flag</h2><p>CTF · 35+ teams</p></div>
+        </div>
+        <div className="memory-entry compact-entry">
+          <span className="memory-date">SCHOOL HONORS</span>
+          <div><h2>Olympiad district qualifier</h2><p>SOF IEO and ISO · multiple-time school-level winner</p></div>
+        </div>
+        <div className="memory-entry compact-entry">
+          <span className="memory-date">CUSAT</span>
+          <div><h2>Summer Science Workshops</h2><p>Participated at Cochin University of Science and Technology</p></div>
         </div>
       </div>
     </div>
@@ -851,13 +975,13 @@ function LorePanel() {
       <PanelTitle kicker="ABOUT THE PLAYER" title="Still" accent=" becoming." />
       <div className="lore-layout">
         <div>
-          <p className="lore-lead">I am interested in the space where engineering discipline meets the feeling of discovery.</p>
-          <p className="panel-lead">From Kerala to Vellore, the work has always been a way to ask better questions. I study Computer Science, then test what I learn by making things people can actually use.</p>
+          <p className="lore-lead">Third-year B.Tech Computer Science student with hands-on full-stack development experience.</p>
+          <p className="panel-lead">Across React, Django REST Framework, and MongoDB, I turn independent projects and practical experience into reliable products. I am actively seeking software development internship and full-time opportunities.</p>
         </div>
         <div className="lore-facts">
           <div><span>ORIGIN</span><b>KERALA, INDIA</b></div>
           <div><span>CLASS</span><b>FULL-STACK DEVELOPER</b></div>
-          <div><span>INTERESTS</span><b>GAMES / AI / 3D</b></div>
+          <div><span>INTERESTS</span><b>GAME DEV / AI + AUTOMATION / 3D</b></div>
           <div><span>ARMAMENT</span><b>REACT + PYTHON</b></div>
         </div>
       </div>
@@ -875,9 +999,18 @@ function SignalPanel() {
         <Mail size={24} strokeWidth={1} />
         <div><span>PRIMARY CHANNEL</span><a href="mailto:akshay47suresh@gmail.com">akshay47suresh@gmail.com</a></div>
       </div>
+      <div className="signal-card signal-card-secondary">
+        <Mail size={24} strokeWidth={1} />
+        <div><span>DIRECT LINE</span><a href="tel:+918075292781">+91 8075292781</a></div>
+      </div>
+      <div className="signal-links">
+        <a href={profileLinks.github} target="_blank" rel="noreferrer"><Github size={16} /><span>GITHUB</span><small>AKSHAY0047</small></a>
+        <a href={profileLinks.linkedin} target="_blank" rel="noreferrer"><Linkedin size={16} /><span>LINKEDIN</span><small>AKSHAY47SURESH</small></a>
+      </div>
       <div className="signal-actions">
         <a className="game-action-button primary" href="mailto:akshay47suresh@gmail.com"><Mail size={15} /> OPEN EMAIL</a>
-        <a className="game-action-button" href="mailto:akshay47suresh@gmail.com"><Mail size={15} /> EMAIL</a>
+        <a className="game-action-button" href={profileLinks.github} target="_blank" rel="noreferrer"><Github size={15} /> GITHUB</a>
+        <a className="game-action-button" href={profileLinks.linkedin} target="_blank" rel="noreferrer"><Linkedin size={15} /> LINKEDIN</a>
       </div>
     </div>
   );
