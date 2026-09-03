@@ -917,51 +917,35 @@ function AttributesPanel() {
 }
 
 function MemoriesPanel() {
+  const memories = [
+    { date: 'JUN — JUL 2026', category: 'EXPERIENCE', title: 'Full-stack development intern', subtitle: 'Antlegs Technology Solutions Pvt. Ltd.', detail: 'Built authentication, profile, and user-management applications with React, Django REST Framework, and MongoDB.' },
+    { date: '2024 — PRESENT', category: 'EDUCATION', title: 'Computer Science Engineering', subtitle: 'VIT Vellore · CGPA 9.24', detail: 'Software engineering, algorithms, systems, and the practical craft of turning ideas into useful products.' },
+    { date: 'JEE MAIN 2024', category: 'EDUCATION', title: '96.66 percentile', subtitle: 'Qualified', detail: '' },
+    { date: '2024 / CBSE XII', category: 'EDUCATION', title: 'Senior Secondary', subtitle: 'SFS Public School, Kottayam · 97.4%', detail: '' },
+    { date: '2022 / ICSE X', category: 'EDUCATION', title: 'Secondary', subtitle: 'Pallikoodam, Kottayam · 93%', detail: '' },
+    { date: 'CERTIFIED', category: 'CERTIFICATIONS', title: 'Developer foundations', subtitle: 'WhiteHat Jr · Udemy', detail: 'Junior Developer and App Developer certifications covering HTML, CSS, JavaScript, and React.' },
+    { date: 'IEEE COMPUTER SOCIETY', category: 'ACHIEVEMENTS', title: '3rd place — Where’s The Flag', subtitle: 'CTF · 35+ teams', detail: '' },
+    { date: 'SCHOOL HONORS', category: 'ACHIEVEMENTS', title: 'Olympiad district qualifier', subtitle: 'SOF IEO and ISO · multiple-time school-level winner', detail: '' },
+    { date: 'CUSAT', category: 'ACTIVITIES', title: 'Summer Science Workshops', subtitle: 'Cochin University of Science and Technology', detail: 'Participated in the university’s summer science workshops.' },
+  ];
+
   return (
-    <div className="content-panel">
+    <div className="content-panel memory-panel">
       <div className="panel-topline"><span>MEMORY FRAGMENTS / CHRONICLE</span><span className="status-dot"><CircleDot size={12} /> INDEXED</span></div>
       <PanelTitle kicker="RECORDED PATH" title="The" accent=" chronicle" />
-      <div className="memory-list">
-        <div className="memory-section-label">EXPERIENCE</div>
-        <div className="memory-entry">
-          <span className="memory-date">JUN — JUL 2026</span>
-          <div><h2>Full-stack development intern</h2><p>Antlegs Technology Solutions Pvt. Ltd.</p><small>Built authentication, profile, and user management applications with React, Django REST Framework, and MongoDB.</small></div>
-        </div>
-        <div className="memory-section-label">EDUCATION</div>
-        <div className="memory-entry">
-          <span className="memory-date">2024 — PRESENT</span>
-          <div><h2>Computer Science Engineering</h2><p>VIT Vellore · CGPA 9.24</p><small>Building a strong foundation across software engineering, algorithms, systems, and the practical craft of turning ideas into useful products.</small></div>
-        </div>
-        <div className="memory-entry compact-entry">
-          <span className="memory-date">JEE MAIN 2024</span>
-          <div><h2>96.66 percentile</h2><p>Qualified</p></div>
-        </div>
-        <div className="memory-entry compact-entry">
-          <span className="memory-date">2024 / CBSE XII</span>
-          <div><h2>Senior Secondary</h2><p>SFS Public School, Kottayam · 97.4%</p></div>
-        </div>
-        <div className="memory-entry compact-entry">
-          <span className="memory-date">2022 / ICSE X</span>
-          <div><h2>Secondary</h2><p>Pallikoodam, Kottayam · 93%</p></div>
-        </div>
-        <div className="memory-section-label">CERTIFICATIONS</div>
-        <div className="memory-entry compact-entry">
-          <span className="memory-date">CERTIFIED</span>
-          <div><h2>Developer foundations</h2><p>Junior Developer Certification · App Developer Certification — WhiteHat Jr</p><small>HTML, CSS, JavaScript, React — Online Certification Course · Udemy</small></div>
-        </div>
-        <div className="memory-section-label">ACHIEVEMENTS / ACTIVITIES</div>
-        <div className="memory-entry compact-entry">
-          <span className="memory-date">IEEE COMPUTER SOCIETY</span>
-          <div><h2>3rd place — Where&apos;s The Flag</h2><p>CTF · 35+ teams</p></div>
-        </div>
-        <div className="memory-entry compact-entry">
-          <span className="memory-date">SCHOOL HONORS</span>
-          <div><h2>Olympiad district qualifier</h2><p>SOF IEO and ISO · multiple-time school-level winner</p></div>
-        </div>
-        <div className="memory-entry compact-entry">
-          <span className="memory-date">CUSAT</span>
-          <div><h2>Summer Science Workshops</h2><p>Participated at Cochin University of Science and Technology</p></div>
-        </div>
+      <div className="memory-timeline">
+        {memories.map((memory, index) => (
+          <article className={`timeline-entry ${index % 2 === 0 ? 'is-left' : 'is-right'}`} key={`${memory.date}-${memory.title}`}>
+            <div className="timeline-time">{memory.date}</div>
+            <span className="timeline-node" aria-hidden="true" />
+            <div className="timeline-card">
+              <span>{memory.category}</span>
+              <h2>{memory.title}</h2>
+              <p>{memory.subtitle}</p>
+              {memory.detail && <small>{memory.detail}</small>}
+            </div>
+          </article>
+        ))}
       </div>
     </div>
   );
