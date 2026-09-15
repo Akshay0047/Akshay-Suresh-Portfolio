@@ -913,6 +913,20 @@ function PanelTitle({ kicker, title, accent }: { kicker: string; title: string; 
   );
 }
 
+const inkBleedInitial = {
+  opacity: 0,
+  filter: 'blur(12px) grayscale(100%) contrast(150%)',
+  scale: 0.98,
+};
+
+const inkBleedAnimate = {
+  opacity: 1,
+  filter: 'blur(0px) grayscale(0%) contrast(100%)',
+  scale: 1,
+};
+
+const inkBleedTransition = { duration: 0.75, ease: 'easeOut' as const };
+
 function ProjectPanel({
   selectedProject,
   onProjectChange,
@@ -921,6 +935,10 @@ function ProjectPanel({
   onProjectChange: (index: number) => void;
 }) {
   const project = projects[selectedProject];
+  const prefersReducedMotion = useReducedMotion();
+  const inkInitial = prefersReducedMotion ? { opacity: 0 } : inkBleedInitial;
+  const inkAnimate = prefersReducedMotion ? { opacity: 1 } : inkBleedAnimate;
+
   return (
     <div className="content-panel project-panel flex min-h-0 flex-col overflow-hidden">
       <div className="panel-topline shrink-0">
@@ -932,60 +950,79 @@ function ProjectPanel({
         className="mt-4 min-h-0 flex-1 overflow-y-auto py-4 pr-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
         aria-label={`Inspecting ${project.title}`}
       >
-        <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,135px)_1fr] lg:items-start lg:gap-8">
-          <div className="item-emblem shrink-0">
-            <div className="combat-art-frame">
-              <img src={combatArtSrc} alt="" />
-              <span>{project.index}</span>
-            </div>
-            <span>COMBAT ART</span>
-          </div>
-
-          <div className="flex min-w-0 flex-col gap-6 py-4 pr-4">
-            <div className="flex flex-col gap-6">
-              <div className="space-y-2">
-                <span className="item-type">{project.type} / {project.year}</span>
-                <h2 className="item-copy-title">{project.title}</h2>
-              </div>
-
-              <p className="text-wrap break-words font-[family-name:var(--app-font-mono)] text-[10px] leading-relaxed text-[#aba190]">
-                {project.description}
-              </p>
-
-              <div className="metric-line">
-                <span>ATTRIBUTE</span>
-                <b>{project.metric}</b>
-              </div>
-
-              <div className="flex flex-wrap gap-2" aria-label="Tech stack">
-                {project.stack.map((tech) => (
-                  <span
-                    key={tech}
-                    className="rounded-md border border-[rgba(192,176,143,0.2)] bg-[#1c1b19] px-2 py-1 font-[family-name:var(--app-font-mono)] text-[10px] tracking-wide text-[#9e9585]"
-                  >
-                    {tech}
-                  </span>
-                ))}
-              </div>
-
-              {project.detail && (
-                <p className="text-wrap break-words rounded-sm border-l-2 border-[var(--amber)] bg-[#1c1b19] px-3 py-3 font-[family-name:var(--app-font-mono)] text-[10px] leading-relaxed text-[#9e9585]">
-                  {project.detail}
-                </p>
-              )}
-            </div>
-
-            <a
-              className="project-repo-link inline-flex w-fit items-center gap-2"
-              href={project.repoUrl ?? profileLinks.github}
-              target="_blank"
-              rel="noreferrer"
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={project.index}
+            className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,135px)_1fr] lg:items-start lg:gap-8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.35, ease: 'easeOut' }}
+          >
+            <motion.div
+              className="item-emblem shrink-0"
+              initial={inkInitial}
+              animate={inkAnimate}
+              transition={inkBleedTransition}
             >
-              <Github size={14} />
-              {project.repoUrl ? 'OPEN GITHUB REPOSITORY' : 'BROWSE GITHUB PROFILE'}
-            </a>
-          </div>
-        </div>
+              <div className="combat-art-frame">
+                <img src={combatArtSrc} alt="" />
+                <span>{project.index}</span>
+              </div>
+              <span>COMBAT ART</span>
+            </motion.div>
+
+            <motion.div
+              className="flex min-w-0 flex-col gap-6 py-4 pr-4"
+              initial={inkInitial}
+              animate={inkAnimate}
+              transition={{ ...inkBleedTransition, delay: prefersReducedMotion ? 0 : 0.1 }}
+            >
+              <div className="flex flex-col gap-6">
+                <div className="space-y-2">
+                  <span className="item-type">{project.type} / {project.year}</span>
+                  <h2 className="item-copy-title">{project.title}</h2>
+                </div>
+
+                <p className="text-wrap break-words font-[family-name:var(--app-font-mono)] text-[10px] leading-relaxed text-[#aba190]">
+                  {project.description}
+                </p>
+
+                <div className="metric-line">
+                  <span>ATTRIBUTE</span>
+                  <b>{project.metric}</b>
+                </div>
+
+                <div className="flex flex-wrap gap-2" aria-label="Tech stack">
+                  {project.stack.map((tech) => (
+                    <span
+                      key={tech}
+                      className="rounded-md border border-[rgba(192,176,143,0.2)] bg-[#1c1b19] px-2 py-1 font-[family-name:var(--app-font-mono)] text-[10px] tracking-wide text-[#9e9585]"
+                    >
+                      {tech}
+                    </span>
+                  ))}
+                </div>
+
+                {project.detail && (
+                  <p className="text-wrap break-words rounded-sm border-l-2 border-[var(--amber)] bg-[#1c1b19] px-3 py-3 font-[family-name:var(--app-font-mono)] text-[10px] leading-relaxed text-[#9e9585]">
+                    {project.detail}
+                  </p>
+                )}
+              </div>
+
+              <a
+                className="project-repo-link inline-flex w-fit items-center gap-2"
+                href={project.repoUrl ?? profileLinks.github}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Github size={14} />
+                {project.repoUrl ? 'OPEN GITHUB REPOSITORY' : 'BROWSE GITHUB PROFILE'}
+              </a>
+            </motion.div>
+          </motion.div>
+        </AnimatePresence>
       </section>
 
       <nav
