@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
@@ -196,17 +196,42 @@ function Particles({ count = 28 }: { count?: number }) {
 function LoadingScreen({ onComplete }: { onComplete: () => void }) {
   const [progress, setProgress] = useState(4);
   const [isStriking, setIsStriking] = useState(false);
+  const strikingRef = useRef(false);
 
   useEffect(() => {
-    const progressTimer = window.setInterval(() => setProgress((current) => Math.min(current + 6, 94)), 62);
-    const strikeTimer = window.setTimeout(() => setIsStriking(true), 1320);
-    const finish = window.setTimeout(() => setProgress(100), 1450);
-    const loaded = window.setTimeout(onComplete, 1640);
+    let mounted = true;
+    let ready = false;
+    let minimumReached = false;
+    const completionTimers: number[] = [];
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const progressTimer = window.setInterval(() => setProgress((current) => Math.min(current + 8, 94)), reducedMotion ? 100 : 72);
+    const startStrike = () => {
+      if (!mounted || strikingRef.current) return;
+      strikingRef.current = true;
+      setIsStriking(true);
+      completionTimers.push(window.setTimeout(() => mounted && setProgress(100), 260));
+      // The clip-path exit begins while the blade is finishing its travel, making one continuous cut.
+      completionTimers.push(window.setTimeout(() => mounted && onComplete(), 430));
+    };
+    const minimumTimer = window.setTimeout(() => {
+      minimumReached = true;
+      if (ready) startStrike();
+    }, reducedMotion ? 80 : 1260);
+    const fallbackTimer = window.setTimeout(startStrike, reducedMotion ? 500 : 1900);
+    const criticalImage = new Image();
+    criticalImage.src = combatArtSrc;
+    const imageReady = criticalImage.decode ? criticalImage.decode().catch(() => undefined) : Promise.resolve();
+    Promise.allSettled([document.fonts?.ready ?? Promise.resolve(), imageReady]).then(() => {
+      if (!mounted) return;
+      ready = true;
+      if (minimumReached) startStrike();
+    });
     return () => {
+      mounted = false;
       window.clearInterval(progressTimer);
-      window.clearTimeout(strikeTimer);
-      window.clearTimeout(finish);
-      window.clearTimeout(loaded);
+      window.clearTimeout(minimumTimer);
+      window.clearTimeout(fallbackTimer);
+      completionTimers.forEach((timer) => window.clearTimeout(timer));
     };
   }, [onComplete]);
 
@@ -214,8 +239,8 @@ function LoadingScreen({ onComplete }: { onComplete: () => void }) {
     <motion.div
       className={`loading-screen ${isStriking ? 'is-striking' : ''}`}
       initial={{ opacity: 1 }}
-      exit={{ clipPath: 'polygon(0 0, 0 100%, 16% 100%, 100% 0, 100% 0)', opacity: 1 }}
-      transition={{ duration: 0.34, ease: [0.77, 0, 0.175, 1] }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.42, ease: [0.23, 1, 0.32, 1] }}
       aria-label="Loading portfolio"
     >
       <Particles count={24} />
@@ -226,105 +251,104 @@ function LoadingScreen({ onComplete }: { onComplete: () => void }) {
         <div className="loading-name">AKSHAY SURESH</div>
         <div className="loading-subtitle">SHINOBI / DEVELOPER</div>
       </div>
-      <div className="loading-shinobi" aria-hidden="true"><span className="shinobi-head" /><span className="shinobi-body" /><span className="shinobi-blade" /></div>
+      <div className="loading-glare" aria-hidden="true" />
       <div className="loading-progress">
         <div className="loading-progress-label"><span>INITIALIZING ARCHIVE</span><span>{String(progress).padStart(2, '0')}%</span></div>
-        <div className="loading-track"><motion.div className="loading-fill" initial={{ width: '4%' }} animate={{ width: `${progress}%` }} transition={{ duration: 0.12, ease: 'linear' }} /></div>
+        <div className="loading-track"><motion.div className="loading-fill" initial={{ scaleX: 0.04 }} animate={{ scaleX: progress / 100 }} transition={{ duration: 0.12, ease: 'linear' }} /></div>
       </div>
-      <svg className="katana-slash" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-        <defs><linearGradient id="slash-steel" x1="0" x2="1"><stop offset="0" stopColor="transparent" /><stop offset="0.45" stopColor="#d7c7a5" /><stop offset="0.52" stopColor="#fff5d6" /><stop offset="0.62" stopColor="#a94c32" /><stop offset="1" stopColor="transparent" /></linearGradient><filter id="slash-blur"><feGaussianBlur stdDeviation="1.1" /></filter></defs>
-        <path className="katana-trail katana-trail-soft" d="M -8 0 Q 50 45 108 100" filter="url(#slash-blur)" /><path className="katana-trail" d="M -8 0 Q 50 45 108 100" /><path className="katana-edge" d="M -8 0 Q 50 45 108 100" />
-      </svg>
-      <div className="slash-embers" aria-hidden="true"><i /><i /><i /><i /><i /></div>
+
     </motion.div>
   );
 }
 
 function SwordCursor() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const cursorRef = useRef<HTMLSpanElement>(null);
   const trailPoints = useRef<Array<{ x: number; y: number; time: number }>>([]);
-  const [pointer, setPointer] = useState({ x: -100, y: -100, visible: false });
+  const pointer = useRef({ x: -100, y: -100 });
+  const visibleRef = useRef(false);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    if (window.matchMedia('(hover: none), (pointer: coarse)').matches) return;
     const canvas = canvasRef.current;
-    const context = canvas?.getContext('2d');
-    if (!canvas || !context) return;
+    const cursor = cursorRef.current;
+    const context = canvas?.getContext('2d', { alpha: true });
+    if (!canvas || !cursor || !context) return;
+    const cursorElement = cursor;
+    const trailContext = context;
 
-    const resizeCanvas = () => {
-      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
-      canvas.width = window.innerWidth * pixelRatio;
-      canvas.height = window.innerHeight * pixelRatio;
-      context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+    let animationFrame = 0;
+    const requestTrailFrame = () => {
+      if (!animationFrame) animationFrame = window.requestAnimationFrame(renderTrail);
     };
-
+    const resizeCanvas = () => {
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 1.5);
+      canvas.width = Math.floor(window.innerWidth * pixelRatio);
+      canvas.height = Math.floor(window.innerHeight * pixelRatio);
+      context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      requestTrailFrame();
+    };
     const handleMove = (event: PointerEvent) => {
       const x = event.clientX;
       const y = event.clientY;
       const last = trailPoints.current[trailPoints.current.length - 1];
-      if (last && Math.hypot(x - last.x, y - last.y) < 2) return;
-      setPointer({ x, y, visible: true });
+      if (last && Math.hypot(x - last.x, y - last.y) < 3) return;
+      pointer.current = { x, y };
+      if (!visibleRef.current) {
+        visibleRef.current = true;
+        setVisible(true);
+      }
       trailPoints.current.push({ x, y, time: performance.now() });
-      if (trailPoints.current.length > 20) trailPoints.current.shift();
+      if (trailPoints.current.length > 16) trailPoints.current.shift();
+      requestTrailFrame();
     };
-
     const handleLeave = () => {
       trailPoints.current = [];
-      setPointer((current) => ({ ...current, visible: false }));
+      visibleRef.current = false;
+      setVisible(false);
+      cursor.style.transform = 'translate(-10%, -8%)';
+      if (!animationFrame) context.clearRect(0, 0, window.innerWidth, window.innerHeight);
     };
-
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-    window.addEventListener('pointermove', handleMove);
-    document.addEventListener('mouseleave', handleLeave);
-    let animationFrame = 0;
-    const renderTrail = (time: number) => {
+    function renderTrail(time: number) {
+      animationFrame = 0;
       const points = trailPoints.current;
-      while (points.length && time - points[0].time > 520) points.shift();
-
-      context.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      while (points.length && time - points[0].time > 420) points.shift();
+      cursorElement.style.left = `${pointer.current.x}px`;
+      cursorElement.style.top = `${pointer.current.y}px`;
+      trailContext.clearRect(0, 0, window.innerWidth, window.innerHeight);
       if (points.length > 1) {
-        context.lineCap = 'round';
-        context.lineJoin = 'round';
+        trailContext.lineCap = 'round';
+        trailContext.lineJoin = 'round';
         for (let index = 1; index < points.length; index += 1) {
           const point = points[index - 1];
           const nextPoint = points[index];
-          const age = time - nextPoint.time;
-          const ageOpacity = Math.max(0, 1 - age / 520);
+          const ageOpacity = Math.max(0, 1 - (time - nextPoint.time) / 420);
           const progress = index / (points.length - 1);
-          context.strokeStyle = `rgba(255, 255, 255, ${ageOpacity * (0.16 + progress * 0.84)})`;
-          context.lineWidth = 1.5 + progress * 8.5;
-          context.beginPath();
-          context.moveTo(point.x, point.y);
-          context.lineTo(nextPoint.x, nextPoint.y);
-          context.stroke();
+          trailContext.strokeStyle = `rgba(235, 215, 174, ${ageOpacity * (0.12 + progress * 0.58)})`;
+          trailContext.lineWidth = 1 + progress * 5;
+          trailContext.beginPath();
+          trailContext.moveTo(point.x, point.y);
+          trailContext.lineTo(nextPoint.x, nextPoint.y);
+          trailContext.stroke();
         }
       }
-      animationFrame = window.requestAnimationFrame(renderTrail);
-    };
-    animationFrame = window.requestAnimationFrame(renderTrail);
+      if (points.length) requestTrailFrame();
+    }
 
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas, { passive: true });
+    window.addEventListener('pointermove', handleMove, { passive: true });
+    document.addEventListener('mouseleave', handleLeave);
     return () => {
       window.removeEventListener('resize', resizeCanvas);
       window.removeEventListener('pointermove', handleMove);
       document.removeEventListener('mouseleave', handleLeave);
-      window.cancelAnimationFrame(animationFrame);
+      if (animationFrame) window.cancelAnimationFrame(animationFrame);
     };
   }, []);
 
-  return (
-    <div className="sword-cursor-layer" aria-hidden="true">
-      <canvas ref={canvasRef} className="sword-trail-canvas" />
-      <span
-        className={`sword-cursor ${pointer.visible ? 'is-visible' : ''}`}
-        style={{
-          left: pointer.x,
-          top: pointer.y,
-          transform: 'translate(-10%, -8%)',
-        }}
-      >
-      </span>
-    </div>
-  );
+  return <div className="sword-cursor-layer" aria-hidden="true"><canvas ref={canvasRef} className="sword-trail-canvas" /><span ref={cursorRef} className={`sword-cursor ${visible ? 'is-visible' : ''}`} /></div>;
 }
 
 type ArcadeObject = {
@@ -352,12 +376,29 @@ type ArcadeSplash = {
   color: string;
 };
 
+type ArcadeSplatDrop = {
+  angle: number;
+  distance: number;
+  size: number;
+  stretch: number;
+};
+
+type ArcadeSplatStreak = {
+  angle: number;
+  distance: number;
+  length: number;
+  width: number;
+};
+
 type ArcadeMark = {
   x: number;
   y: number;
   rotation: number;
   scale: number;
   color: string;
+  lobes: Array<{ x: number; y: number }>;
+  drops: ArcadeSplatDrop[];
+  streaks: ArcadeSplatStreak[];
 };
 
 function distanceToSegment(
@@ -407,6 +448,10 @@ function FruitArcade() {
     const canvas = canvasRef.current;
     const context = canvas?.getContext('2d');
     if (!canvas || !context) return;
+    if (!active) {
+      context.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      return;
+    }
 
     const resizeCanvas = () => {
       const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
@@ -417,12 +462,33 @@ function FruitArcade() {
 
     const addSplash = (item: ArcadeObject, angle: number) => {
       const splashColor = item.kind === 'bomb' ? '#d59b58' : item.color;
+      const lobeCount = 18;
       marks.current.push({
         x: item.x,
         y: item.y,
         rotation: angle,
         scale: 1.1 + Math.random() * 0.48,
         color: splashColor,
+        lobes: Array.from({ length: lobeCount }, (_, index) => {
+          const direction = (Math.PI * 2 * index) / lobeCount;
+          const radius = 24 + Math.random() * 26;
+          return {
+            x: Math.cos(direction) * radius,
+            y: Math.sin(direction) * (radius * (0.62 + Math.random() * 0.34)),
+          };
+        }),
+        drops: Array.from({ length: 17 }, (_, index) => ({
+          angle: (Math.PI * 2 * index) / 17 + (Math.random() - 0.5) * 0.24,
+          distance: 34 + Math.random() * 53,
+          size: 2.3 + Math.random() * 5.2,
+          stretch: 1.2 + Math.random() * 2.2,
+        })),
+        streaks: Array.from({ length: 7 }, (_, index) => ({
+          angle: (Math.PI * 2 * index) / 7 + (Math.random() - 0.5) * 0.32,
+          distance: 20 + Math.random() * 28,
+          length: 12 + Math.random() * 23,
+          width: 2 + Math.random() * 3.5,
+        })),
       });
       for (let index = 0; index < 42; index += 1) {
         const direction = (Math.PI * 2 * index) / 42 + Math.random() * 0.55;
@@ -560,17 +626,39 @@ function FruitArcade() {
       context.fillStyle = mark.color;
       context.shadowColor = mark.color;
       context.shadowBlur = 18;
-      context.beginPath();
-      context.ellipse(0, 0, 43, 23, 0, 0, Math.PI * 2);
+      const lobeMidpoint = (first: { x: number; y: number }, second: { x: number; y: number }) => ({
+        x: (first.x + second.x) / 2,
+        y: (first.y + second.y) / 2,
+      });
+      const firstMidpoint = lobeMidpoint(mark.lobes[0], mark.lobes[1]);
+      context.moveTo(firstMidpoint.x, firstMidpoint.y);
+      mark.lobes.forEach((point, index) => {
+        const nextPoint = mark.lobes[(index + 1) % mark.lobes.length];
+        const nextMidpoint = lobeMidpoint(point, nextPoint);
+        context.quadraticCurveTo(point.x, point.y, nextMidpoint.x, nextMidpoint.y);
+      });
+      context.closePath();
       context.fill();
-      for (let index = 0; index < 15; index += 1) {
-        const direction = (Math.PI * 2 * index) / 15;
-        const distance = 32 + (index % 4) * 9;
-        const size = 2.5 + (index % 4) * 1.8;
+      context.globalAlpha = 0.72;
+      mark.streaks.forEach((streak) => {
+        context.save();
+        context.rotate(streak.angle);
+        context.translate(streak.distance, 0);
         context.beginPath();
-        context.arc(Math.cos(direction) * distance, Math.sin(direction) * distance, size, 0, Math.PI * 2);
+        context.ellipse(streak.length / 2, 0, streak.length / 2, streak.width, 0, 0, Math.PI * 2);
         context.fill();
-      }
+        context.restore();
+      });
+      context.globalAlpha = 0.88;
+      mark.drops.forEach((drop) => {
+        context.save();
+        context.rotate(drop.angle);
+        context.translate(drop.distance, 0);
+        context.beginPath();
+        context.ellipse(0, 0, drop.size * drop.stretch, drop.size, 0, 0, Math.PI * 2);
+        context.fill();
+        context.restore();
+      });
       context.restore();
     };
 
@@ -617,13 +705,25 @@ function FruitArcade() {
 
       objects.current.forEach(drawFruit);
       splashes.current.forEach((particle) => {
+        context.save();
+        context.translate(particle.x, particle.y);
+        context.rotate(Math.atan2(particle.vy, particle.vx));
         context.beginPath();
-        context.arc(particle.x, particle.y, particle.size * particle.life, 0, Math.PI * 2);
+        context.ellipse(
+          0,
+          0,
+          particle.size * particle.life * 1.55,
+          particle.size * particle.life * 0.62,
+          0,
+          0,
+          Math.PI * 2,
+        );
         context.fillStyle = particle.color;
         context.globalAlpha = particle.life;
         context.shadowColor = particle.color;
         context.shadowBlur = 10;
         context.fill();
+        context.restore();
         context.globalAlpha = 1;
         context.shadowBlur = 0;
       });
@@ -642,7 +742,7 @@ function FruitArcade() {
       document.removeEventListener('mouseleave', handleLeave);
       window.cancelAnimationFrame(animationFrame);
     };
-  }, []);
+  }, [active]);
 
   const startArcade = () => {
     activeRef.current = true;
@@ -907,8 +1007,54 @@ function AttributesPanel() {
   );
 }
 
+type Memory = {
+  date: string;
+  category: string;
+  title: string;
+  subtitle: string;
+  detail: string;
+};
+
+function TimelineEntry({ memory, index }: { memory: Memory; index: number }) {
+  const entryRef = useRef<HTMLElement>(null);
+  const [revealed, setRevealed] = useState(false);
+
+  useEffect(() => {
+    const entry = entryRef.current;
+    if (!entry) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) {
+      setRevealed(true);
+      return;
+    }
+    const timeline = entry.parentElement;
+    const observer = new IntersectionObserver(
+      ([event]) => {
+        if (!event.isIntersecting) return;
+        setRevealed(true);
+        observer.unobserve(entry);
+      },
+      { root: timeline, rootMargin: '0px 0px -10% 0px', threshold: 0.18 },
+    );
+    observer.observe(entry);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <article ref={entryRef} className={`timeline-entry ${index % 2 === 0 ? 'is-left' : 'is-right'} ${revealed ? 'is-revealed' : ''}`}>
+      <div className="timeline-time">{memory.date}</div>
+      <span className="timeline-node" aria-hidden="true" />
+      <div className="timeline-card">
+        <span>{memory.category}</span>
+        <h2>{memory.title}</h2>
+        <p>{memory.subtitle}</p>
+        {memory.detail && <small>{memory.detail}</small>}
+      </div>
+    </article>
+  );
+}
+
 function MemoriesPanel() {
-  const memories = [
+  const memories: Memory[] = [
     { date: 'JUN — JUL 2026', category: 'EXPERIENCE', title: 'Full-stack development intern', subtitle: 'Antlegs Technology Solutions Pvt. Ltd.', detail: 'Built authentication, profile, and user-management applications with React, Django REST Framework, and MongoDB.' },
     { date: '2024 — PRESENT', category: 'EDUCATION', title: 'Computer Science Engineering', subtitle: 'VIT Vellore · CGPA 9.24', detail: 'Software engineering, algorithms, systems, and the practical craft of turning ideas into useful products.' },
     { date: 'JEE MAIN 2024', category: 'EDUCATION', title: '96.66 percentile', subtitle: 'Qualified', detail: '' },
@@ -926,16 +1072,7 @@ function MemoriesPanel() {
       <PanelTitle kicker="RECORDED PATH" title="The" accent=" chronicle" />
       <div className="memory-timeline">
         {memories.map((memory, index) => (
-          <article className={`timeline-entry ${index % 2 === 0 ? 'is-left' : 'is-right'}`} key={`${memory.date}-${memory.title}`}>
-            <div className="timeline-time">{memory.date}</div>
-            <span className="timeline-node" aria-hidden="true" />
-            <div className="timeline-card">
-              <span>{memory.category}</span>
-              <h2>{memory.title}</h2>
-              <p>{memory.subtitle}</p>
-              {memory.detail && <small>{memory.detail}</small>}
-            </div>
-          </article>
+          <TimelineEntry key={`${memory.date}-${memory.title}`} memory={memory} index={index} />
         ))}
       </div>
     </div>
@@ -1149,13 +1286,14 @@ function MainMenu({ onReturnToLanding }: { onReturnToLanding: () => void }) {
 }
 
 function Home() {
-  const [screen, setScreen] = useState<'loading' | 'title' | 'menu'>('loading');
+  const [screen, setScreen] = useState<'title' | 'menu'>('title');
   const [openTitleOptions, setOpenTitleOptions] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const completeLoading = useCallback(() => setIsLoading(false), []);
   return (
     <div className="portfolio-app">
       <SwordCursor />
       <AnimatePresence mode="wait">
-        {screen === 'loading' && <LoadingScreen key="loading" onComplete={() => setScreen('title')} />}
         {screen === 'title' && !openTitleOptions && (
           <TitleScreen key="title" onContinue={() => setScreen('menu')} onOptions={() => setOpenTitleOptions(true)} />
         )}
@@ -1178,6 +1316,7 @@ function Home() {
           />
         )}
       </AnimatePresence>
+      <AnimatePresence>{isLoading && <LoadingScreen key="loading" onComplete={completeLoading} />}</AnimatePresence>
     </div>
   );
 }
