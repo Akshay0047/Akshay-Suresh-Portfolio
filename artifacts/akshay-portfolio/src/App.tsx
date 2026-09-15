@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import Atmosphere from '@/components/Atmosphere';
 import { BladeButton } from '@/components/blade-button';
+import { EquipmentPanel } from '@/components/equipment';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -1269,31 +1270,6 @@ function SignalPanel() {
             <a className="game-action-button py-2" href={profileLinks.linkedin} target="_blank" rel="noreferrer"><Linkedin size={14} /> LINKEDIN</a>
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
-
-function EquipmentPanel() {
-  const equipment = [
-    { slot: 'PRIMARY ARM', title: 'REACT', detail: 'Component systems and interfaces built to feel immediate, clear, and alive.', icon: Code2 },
-    { slot: 'SECONDARY ARM', title: 'PYTHON', detail: 'Automation, AI experiments, and service logic that keeps the experience moving.', icon: Sparkles },
-    { slot: 'PROSTHETIC TOOL', title: 'DJANGO REST', detail: 'Structured APIs with authentication, permissions, and dependable data flow.', icon: ShieldCheck },
-    { slot: 'CURRENT QUEST', title: 'VIT VELLORE', detail: 'Computer Science Engineering student with a 9.24 CGPA.', icon: CircleDot },
-  ];
-
-  return (
-    <div className="content-panel equipment-panel">
-      <div className="panel-topline"><span>EQUIPMENT / LOADOUT</span><span className="status-dot"><CircleDot size={12} /> EQUIPPED</span></div>
-      <PanelTitle kicker="CURRENT ARMAMENT" title="The" accent=" arsenal" />
-      <div className="equipment-grid">
-        {equipment.map(({ slot, title, detail, icon: Icon }) => (
-          <div className="equipment-card" key={slot}>
-            <div className="equipment-icon"><Icon size={20} strokeWidth={1.3} /></div>
-            <div><span>{slot}</span><h2>{title}</h2><p>{detail}</p></div>
-            <b>READY</b>
-          </div>
-        ))}
       </div>
     </div>
   );
