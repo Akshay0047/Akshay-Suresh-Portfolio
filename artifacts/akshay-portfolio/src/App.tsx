@@ -18,6 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import Atmosphere from '@/components/Atmosphere';
+import { BladeButton } from '@/components/blade-button';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -782,13 +783,13 @@ function FruitArcade() {
             <span className="death-kanji" aria-hidden="true">死</span>
             <span className="death-label">DEATH</span>
             <div className="fruit-death-actions">
-              <button className="game-action-button primary" type="button" onClick={startArcade}>PLAY AGAIN</button>
+              <BladeButton className="game-action-button primary" type="button" onClick={startArcade}>PLAY AGAIN</BladeButton>
               <button className="game-action-button" type="button" onClick={exitArcade}>EXIT</button>
             </div>
           </div>
         </div>
       )}
-      <button
+      <BladeButton
         className={`fruit-trigger ${active ? 'is-active' : ''}`}
         type="button"
         onClick={toggleArcade}
@@ -798,7 +799,7 @@ function FruitArcade() {
         <Swords size={18} strokeWidth={1.35} />
         <span>{active ? 'EXIT' : 'DRAW THE BLADE'}</span>
         <b>{String(score).padStart(2, '0')}</b>
-      </button>
+      </BladeButton>
     </>
   );
 }
@@ -1382,7 +1383,7 @@ function MainMenu({ onReturnToLanding }: { onReturnToLanding: () => void }) {
               <div className="option-row"><span>MOTION</span><b>ENABLED</b><Check size={15} /></div>
               <div className="option-row"><span>INPUT</span><b>WASD / ARROWS</b><Check size={15} /></div>
               <div className="options-actions">
-                <button className="game-action-button primary close-options" type="button" onClick={() => { setShowOptions(false); setTopTab('INVENTORY'); }}>RETURN TO MENU</button>
+                <BladeButton className="game-action-button primary close-options" type="button" onClick={() => { setShowOptions(false); setTopTab('INVENTORY'); }}>RETURN TO MENU</BladeButton>
                 <button className="game-action-button close-options" type="button" onClick={onReturnToLanding}>RETURN TO LANDING</button>
               </div>
             </motion.div>
@@ -1411,7 +1412,7 @@ function Home() {
               <div className="title-options">
                 <div className="panel-topline"><span>SETTINGS</span><button type="button" onClick={() => setOpenTitleOptions(false)} aria-label="Close settings"><X size={17} /></button></div>
                 <p>Interface motion and input are ready for the archive.</p>
-                <button className="game-action-button primary" type="button" onClick={() => setOpenTitleOptions(false)}>RETURN</button>
+                <BladeButton className="game-action-button primary" type="button" onClick={() => setOpenTitleOptions(false)}>RETURN</BladeButton>
               </div>
             </motion.div>
           )}
