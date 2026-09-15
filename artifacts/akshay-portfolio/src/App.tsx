@@ -2,13 +2,15 @@ import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  Apple,
+  Swords,
   ArrowLeft,
   ArrowRight,
   Check,
   CircleDot,
   Code2,
+  Github,
   Gamepad2,
+  Linkedin,
   Mail,
   ShieldCheck,
   Sparkles,
@@ -24,6 +26,13 @@ const queryClient = new QueryClient();
 
 type MenuId = 'projects' | 'attributes' | 'memories' | 'lore' | 'signal';
 
+const profileLinks = {
+  github: 'https://github.com/Akshay0047',
+  linkedin: 'https://www.linkedin.com/in/akshay47suresh',
+};
+
+const combatArtSrc = `${import.meta.env.BASE_URL}combat-art.png`;
+
 type Project = {
   index: string;
   title: string;
@@ -33,6 +42,7 @@ type Project = {
   stack: string[];
   detail: string;
   metric: string;
+  repoUrl?: string;
 };
 
 const projects: Project[] = [
@@ -41,10 +51,11 @@ const projects: Project[] = [
     title: 'Authentication & Profile',
     type: 'FULL-STACK SYSTEM',
     year: '2025',
-    description: 'Secure registration, login, and profile management with a responsive React frontend.',
+    description: 'Secure registration, login, profile viewing, and profile editing with a responsive React frontend.',
     stack: ['React', 'Django REST', 'MongoDB', 'JWT'],
     detail: 'Manual JWT validation protected API endpoints while working around MongoDB ObjectId compatibility with Django ORM.',
     metric: 'SECURE ACCESS',
+    repoUrl: 'https://github.com/Akshay0047/Authentication-Profile-Management-Application',
   },
   {
     index: '02',
@@ -55,6 +66,7 @@ const projects: Project[] = [
     stack: ['React', 'Redux Toolkit', 'Django REST', 'MongoDB'],
     detail: 'Added bcrypt hashing, httpOnly cookies, and an Axios token-refresh interceptor. Identified and fixed broken access control.',
     metric: 'FULL CRUD',
+    repoUrl: 'https://github.com/Akshay0047/User-Management-System',
   },
   {
     index: '03',
@@ -63,8 +75,9 @@ const projects: Project[] = [
     year: '2024',
     description: 'A multifunctional Discord bot with intelligent queries, reminders, timers, and moderation.',
     stack: ['Python', 'Discord.py', 'Gemini API'],
-    detail: 'Combined AI-assisted responses with music playback, utility commands, reminders, and server moderation.',
+    detail: 'Combined AI-assisted responses with reminders, timers, automated replies, music playback, utility commands, and server moderation.',
     metric: 'AI / AUTOMATION',
+    repoUrl: 'https://github.com/Akshay0047/DiscordBot-Pookie',
   },
   {
     index: '04',
@@ -73,7 +86,7 @@ const projects: Project[] = [
     year: '2024',
     description: 'Real-time emotion detection that turns facial signals into music recommendations.',
     stack: ['Python', 'Machine Learning', 'Computer Vision'],
-    detail: 'Used webcam input and facial landmark mapping to classify emotions and trigger dynamic YouTube searches.',
+    detail: 'Used webcam input and facial landmark mapping to train a model that classifies emotions and triggers dynamic YouTube searches.',
     metric: 'REAL-TIME ML',
   },
   {
@@ -83,20 +96,34 @@ const projects: Project[] = [
     year: '2023–24',
     description: 'Browser games built to sharpen logic, event handling, and interaction design.',
     stack: ['JavaScript', 'Node.js', 'DOM'],
-    detail: 'A collection of small experiments focused on game loops, timing, feedback, and the weight of a good button.',
+    detail: 'Created multiple browser games focused on JavaScript logic, event handling, DOM manipulation, problem solving, and user interaction design.',
     metric: 'GAME LOGIC',
+    repoUrl: 'https://github.com/Akshay0047/Car-Racing-Game',
   },
 ];
 
 const attributes = [
-  { name: 'REACT', value: 89, note: 'interfaces / systems' },
-  { name: 'JAVASCRIPT', value: 86, note: 'interaction / web' },
+  { name: 'C', value: 64, note: 'systems / fundamentals' },
+  { name: 'C++', value: 66, note: 'logic / performance' },
   { name: 'PYTHON', value: 84, note: 'logic / services' },
-  { name: 'DJANGO REST', value: 81, note: 'apis / architecture' },
-  { name: 'REDUX TOOLKIT', value: 77, note: 'state / scale' },
-  { name: 'MONGODB', value: 73, note: 'data / modeling' },
-  { name: 'NODE.JS', value: 72, note: 'runtime / tooling' },
   { name: 'JAVA', value: 68, note: 'object-oriented logic' },
+  { name: 'JAVASCRIPT', value: 86, note: 'interaction / web' },
+  { name: 'ASSEMBLY', value: 51, note: 'low-level concepts' },
+  { name: 'MATLAB', value: 55, note: 'numerical / modeling' },
+  { name: 'HTML5', value: 84, note: 'structure / semantics' },
+  { name: 'CSS3', value: 82, note: 'layout / visual systems' },
+  { name: 'NODE.JS', value: 72, note: 'runtime / tooling' },
+  { name: 'REACT.JS', value: 89, note: 'interfaces / systems' },
+  { name: 'REDUX TOOLKIT', value: 77, note: 'state / scale' },
+  { name: 'DJANGO REST', value: 81, note: 'apis / architecture' },
+  { name: 'MYSQL', value: 64, note: 'relational / data' },
+  { name: 'MONGODB', value: 73, note: 'data / modeling' },
+  { name: 'GIT', value: 80, note: 'branches / history' },
+  { name: 'GITHUB', value: 78, note: 'code / collaboration' },
+  { name: 'DISCORD API', value: 70, note: 'bots / communities' },
+  { name: 'GEMINI API', value: 71, note: 'intelligence / prompts' },
+  { name: 'BLENDER', value: 57, note: 'basic 3d modeling' },
+  { name: 'VIDEO EDITING', value: 56, note: 'cuts / motion' },
 ];
 
 const skillCategories = {
@@ -168,15 +195,16 @@ function Particles({ count = 28 }: { count?: number }) {
 
 function LoadingScreen({ onComplete }: { onComplete: () => void }) {
   const [progress, setProgress] = useState(4);
+  const [isStriking, setIsStriking] = useState(false);
 
   useEffect(() => {
-    const progressTimer = window.setInterval(() => {
-      setProgress((current) => Math.min(current + 4, 94));
-    }, 70);
-    const finish = window.setTimeout(() => setProgress(100), 1810);
-    const loaded = window.setTimeout(onComplete, 2110);
+    const progressTimer = window.setInterval(() => setProgress((current) => Math.min(current + 6, 94)), 62);
+    const strikeTimer = window.setTimeout(() => setIsStriking(true), 1320);
+    const finish = window.setTimeout(() => setProgress(100), 1450);
+    const loaded = window.setTimeout(onComplete, 1640);
     return () => {
       window.clearInterval(progressTimer);
+      window.clearTimeout(strikeTimer);
       window.clearTimeout(finish);
       window.clearTimeout(loaded);
     };
@@ -184,40 +212,30 @@ function LoadingScreen({ onComplete }: { onComplete: () => void }) {
 
   return (
     <motion.div
-      className="loading-screen"
+      className={`loading-screen ${isStriking ? 'is-striking' : ''}`}
       initial={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.5 }}
+      exit={{ clipPath: 'polygon(0 0, 0 100%, 16% 100%, 100% 0, 100% 0)', opacity: 1 }}
+      transition={{ duration: 0.34, ease: [0.77, 0, 0.175, 1] }}
       aria-label="Loading portfolio"
     >
-      <Particles count={36} />
+      <Particles count={24} />
       <div className="loading-vignette" />
+      <div className="loading-ash" aria-hidden="true" />
       <div className="loading-mark">
-        <div className="loading-kanji">葦</div>
-        <Crest />
+        <div className="loading-kanji">忍</div>
         <div className="loading-name">AKSHAY SURESH</div>
-        <div className="loading-subtitle">FIELD ARCHIVE / INITIALIZING</div>
+        <div className="loading-subtitle">SHINOBI / DEVELOPER</div>
       </div>
+      <div className="loading-shinobi" aria-hidden="true"><span className="shinobi-head" /><span className="shinobi-body" /><span className="shinobi-blade" /></div>
       <div className="loading-progress">
-        <div className="loading-progress-label">
-          <span>LOADING MEMORY</span>
-          <span>{String(progress).padStart(2, '0')}%</span>
-        </div>
-        <div className="loading-track">
-          <motion.div
-            className="loading-fill"
-            initial={{ width: '4%' }}
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.12, ease: 'linear' }}
-          />
-        </div>
+        <div className="loading-progress-label"><span>INITIALIZING ARCHIVE</span><span>{String(progress).padStart(2, '0')}%</span></div>
+        <div className="loading-track"><motion.div className="loading-fill" initial={{ width: '4%' }} animate={{ width: `${progress}%` }} transition={{ duration: 0.12, ease: 'linear' }} /></div>
       </div>
-      <motion.div
-        className="katana-slash"
-        initial={{ scaleX: 0, opacity: 0 }}
-        animate={{ scaleX: 1, opacity: [0, 1, 1, 0] }}
-        transition={{ delay: 1.45, duration: 0.55, times: [0, 0.16, 0.6, 1] }}
-      />
+      <svg className="katana-slash" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <defs><linearGradient id="slash-steel" x1="0" x2="1"><stop offset="0" stopColor="transparent" /><stop offset="0.45" stopColor="#d7c7a5" /><stop offset="0.52" stopColor="#fff5d6" /><stop offset="0.62" stopColor="#a94c32" /><stop offset="1" stopColor="transparent" /></linearGradient><filter id="slash-blur"><feGaussianBlur stdDeviation="1.1" /></filter></defs>
+        <path className="katana-trail katana-trail-soft" d="M -8 0 Q 50 45 108 100" filter="url(#slash-blur)" /><path className="katana-trail" d="M -8 0 Q 50 45 108 100" /><path className="katana-edge" d="M -8 0 Q 50 45 108 100" />
+      </svg>
+      <div className="slash-embers" aria-hidden="true"><i /><i /><i /><i /><i /></div>
     </motion.div>
   );
 }
@@ -334,11 +352,12 @@ type ArcadeSplash = {
   color: string;
 };
 
-type ArcadeBurst = {
+type ArcadeMark = {
   x: number;
   y: number;
-  angle: number;
-  life: number;
+  rotation: number;
+  scale: number;
+  color: string;
 };
 
 function distanceToSegment(
@@ -364,11 +383,13 @@ function FruitArcade() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const objects = useRef<ArcadeObject[]>([]);
   const splashes = useRef<ArcadeSplash[]>([]);
-  const bursts = useRef<ArcadeBurst[]>([]);
+  const marks = useRef<ArcadeMark[]>([]);
   const pointer = useRef<{ x: number; y: number } | null>(null);
   const objectId = useRef(0);
+  const lastActivity = useRef(0);
   const activeRef = useRef(false);
   const [active, setActive] = useState(false);
+  const [gameOver, setGameOver] = useState(false);
   const [score, setScore] = useState(0);
 
   useEffect(() => {
@@ -376,8 +397,9 @@ function FruitArcade() {
     if (!active) {
       objects.current = [];
       splashes.current = [];
-      bursts.current = [];
+      marks.current = [];
       pointer.current = null;
+      lastActivity.current = 0;
     }
   }, [active]);
 
@@ -395,34 +417,48 @@ function FruitArcade() {
 
     const addSplash = (item: ArcadeObject, angle: number) => {
       const splashColor = item.kind === 'bomb' ? '#d59b58' : item.color;
-      for (let index = 0; index < 30; index += 1) {
-        const direction = (Math.PI * 2 * index) / 30 + Math.random() * 0.55;
-        const speed = 2.5 + Math.random() * 6.5;
+      marks.current.push({
+        x: item.x,
+        y: item.y,
+        rotation: angle,
+        scale: 1.1 + Math.random() * 0.48,
+        color: splashColor,
+      });
+      for (let index = 0; index < 42; index += 1) {
+        const direction = (Math.PI * 2 * index) / 42 + Math.random() * 0.55;
+        const speed = 3 + Math.random() * 8;
         splashes.current.push({
           x: item.x,
           y: item.y,
           vx: Math.cos(direction) * speed,
           vy: Math.sin(direction) * speed - 2.5,
-          life: 1.2,
-          size: 2 + Math.random() * 5,
+          life: 1.4,
+          size: 2.5 + Math.random() * 6,
           color: splashColor,
         });
       }
-      bursts.current.push({ x: item.x, y: item.y, angle, life: 1.2 });
     };
 
     const sliceObject = (item: ArcadeObject, angle: number) => {
       item.sliced = true;
       addSplash(item, angle);
-      setScore((current) => Math.max(0, current + (item.kind === 'bomb' ? -3 : 1)));
+      if (item.kind === 'bomb') {
+        activeRef.current = false;
+        objects.current = [];
+        setGameOver(true);
+        return;
+      }
+      setScore((current) => current + 1);
     };
 
     const handleMove = (event: PointerEvent) => {
       const next = { x: event.clientX, y: event.clientY };
       const previous = pointer.current;
+      if (activeRef.current) lastActivity.current = performance.now();
       if (activeRef.current && previous) {
         objects.current.forEach((item) => {
           if (
+            activeRef.current &&
             !item.sliced &&
             distanceToSegment(item.x, item.y, previous.x, previous.y, next.x, next.y) <= item.radius + 12
           ) {
@@ -515,6 +551,29 @@ function FruitArcade() {
       context.restore();
     };
 
+    const drawMark = (mark: ArcadeMark) => {
+      context.save();
+      context.translate(mark.x, mark.y);
+      context.rotate(mark.rotation);
+      context.scale(mark.scale, mark.scale);
+      context.globalAlpha = 0.94;
+      context.fillStyle = mark.color;
+      context.shadowColor = mark.color;
+      context.shadowBlur = 18;
+      context.beginPath();
+      context.ellipse(0, 0, 43, 23, 0, 0, Math.PI * 2);
+      context.fill();
+      for (let index = 0; index < 15; index += 1) {
+        const direction = (Math.PI * 2 * index) / 15;
+        const distance = 32 + (index % 4) * 9;
+        const size = 2.5 + (index % 4) * 1.8;
+        context.beginPath();
+        context.arc(Math.cos(direction) * distance, Math.sin(direction) * distance, size, 0, Math.PI * 2);
+        context.fill();
+      }
+      context.restore();
+    };
+
     let lastSpawn = 0;
     let lastFrame = performance.now();
     let animationFrame = 0;
@@ -526,18 +585,27 @@ function FruitArcade() {
       context.clearRect(0, 0, width, height);
 
       if (activeRef.current) {
-        if (!lastSpawn || time - lastSpawn > 610) lastSpawn = spawnWave(time);
-        objects.current.forEach((item) => {
-          if (!item.sliced) {
-            item.x += item.vx * delta;
-            item.y += item.vy * delta;
-            item.vy += item.gravity * delta;
-            item.rotation += item.spin * delta;
-          }
-        });
-        objects.current = objects.current.filter((item) => !item.sliced && item.y < height + 90);
+        if (lastActivity.current && time - lastActivity.current > 20000) {
+          activeRef.current = false;
+          objects.current = [];
+          pointer.current = null;
+          setGameOver(true);
+        }
+        if (activeRef.current) {
+          if (!lastSpawn || time - lastSpawn > 610) lastSpawn = spawnWave(time);
+          objects.current.forEach((item) => {
+            if (!item.sliced) {
+              item.x += item.vx * delta;
+              item.y += item.vy * delta;
+              item.vy += item.gravity * delta;
+              item.rotation += item.spin * delta;
+            }
+          });
+          objects.current = objects.current.filter((item) => !item.sliced && item.y < height + 90);
+        }
       }
 
+      marks.current.forEach(drawMark);
       splashes.current.forEach((particle) => {
         particle.x += particle.vx * delta;
         particle.y += particle.vy * delta;
@@ -546,11 +614,6 @@ function FruitArcade() {
         particle.life -= 0.018 * delta;
       });
       splashes.current = splashes.current.filter((particle) => particle.life > 0);
-
-      bursts.current.forEach((burst) => {
-        burst.life -= 0.028 * delta;
-      });
-      bursts.current = bursts.current.filter((burst) => burst.life > 0);
 
       objects.current.forEach(drawFruit);
       splashes.current.forEach((particle) => {
@@ -564,27 +627,6 @@ function FruitArcade() {
         context.globalAlpha = 1;
         context.shadowBlur = 0;
       });
-      bursts.current.forEach((burst) => {
-        context.save();
-        context.translate(burst.x, burst.y);
-        context.rotate(burst.angle);
-        context.globalAlpha = burst.life;
-        context.strokeStyle = '#fffdf3';
-        context.shadowColor = '#ffffff';
-        context.shadowBlur = 16;
-        context.lineWidth = 3 + burst.life * 8;
-        context.beginPath();
-        context.moveTo(-88 * burst.life, 0);
-        context.lineTo(88 * burst.life, 0);
-        context.stroke();
-        context.globalAlpha = burst.life * 0.72;
-        context.lineWidth = 2.5;
-        context.beginPath();
-        context.arc(0, 0, 20 + (1 - burst.life) * 58, 0, Math.PI * 2);
-        context.stroke();
-        context.restore();
-      });
-
       animationFrame = window.requestAnimationFrame(render);
     };
 
@@ -602,23 +644,57 @@ function FruitArcade() {
     };
   }, []);
 
+  const startArcade = () => {
+    activeRef.current = true;
+    objects.current = [];
+    splashes.current = [];
+    marks.current = [];
+    pointer.current = null;
+    lastActivity.current = performance.now();
+    setGameOver(false);
+    setScore(0);
+    setActive(true);
+  };
+
+  const exitArcade = () => {
+    activeRef.current = false;
+    lastActivity.current = 0;
+    setGameOver(false);
+    setActive(false);
+  };
+
   const toggleArcade = () => {
-    setActive((current) => !current);
-    if (!active) setScore(0);
+    if (active) {
+      exitArcade();
+      return;
+    }
+    startArcade();
   };
 
   return (
     <>
       <canvas ref={canvasRef} className={`fruit-game-canvas ${active ? 'is-active' : ''}`} aria-hidden="true" />
+      {active && gameOver && (
+        <div className="fruit-death-screen" role="dialog" aria-modal="true" aria-label="Death">
+          <div className="fruit-death-card">
+            <span className="death-kanji" aria-hidden="true">死</span>
+            <span className="death-label">DEATH</span>
+            <div className="fruit-death-actions">
+              <button className="game-action-button primary" type="button" onClick={startArcade}>PLAY AGAIN</button>
+              <button className="game-action-button" type="button" onClick={exitArcade}>EXIT</button>
+            </div>
+          </div>
+        </div>
+      )}
       <button
         className={`fruit-trigger ${active ? 'is-active' : ''}`}
         type="button"
         onClick={toggleArcade}
         aria-pressed={active}
-        data-testid="button-fruit-mode"
+        data-testid="button-combat-trial"
       >
-        <Apple size={18} strokeWidth={1.5} />
-        <span>{active ? 'EXIT' : 'SLICE'}</span>
+        <Swords size={18} strokeWidth={1.35} />
+        <span>{active ? 'EXIT' : 'DRAW THE BLADE'}</span>
         <b>{String(score).padStart(2, '0')}</b>
       </button>
     </>
@@ -751,7 +827,10 @@ function ProjectPanel({
       </div>
       <div className="project-inspect">
         <div className="item-emblem">
-          <div className="emblem-diamond"><Code2 size={34} strokeWidth={1} /></div>
+          <div className="combat-art-frame">
+            <img src={combatArtSrc} alt="" />
+            <span>{project.index}</span>
+          </div>
           <span>COMBAT ART</span>
         </div>
         <div className="item-copy">
@@ -762,6 +841,9 @@ function ProjectPanel({
           <div className="stack-list">
             {project.stack.map((tech) => <span key={tech}>{tech}</span>)}
           </div>
+          <a className="project-repo-link" href={project.repoUrl ?? profileLinks.github} target="_blank" rel="noreferrer">
+            <Github size={14} /> {project.repoUrl ? 'OPEN GITHUB REPOSITORY' : 'BROWSE GITHUB PROFILE'}
+          </a>
         </div>
       </div>
       <div className="project-detail">{project.detail}</div>
@@ -826,19 +908,35 @@ function AttributesPanel() {
 }
 
 function MemoriesPanel() {
+  const memories = [
+    { date: 'JUN — JUL 2026', category: 'EXPERIENCE', title: 'Full-stack development intern', subtitle: 'Antlegs Technology Solutions Pvt. Ltd.', detail: 'Built authentication, profile, and user-management applications with React, Django REST Framework, and MongoDB.' },
+    { date: '2024 — PRESENT', category: 'EDUCATION', title: 'Computer Science Engineering', subtitle: 'VIT Vellore · CGPA 9.24', detail: 'Software engineering, algorithms, systems, and the practical craft of turning ideas into useful products.' },
+    { date: 'JEE MAIN 2024', category: 'EDUCATION', title: '96.66 percentile', subtitle: 'Qualified', detail: '' },
+    { date: '2024 / CBSE XII', category: 'EDUCATION', title: 'Senior Secondary', subtitle: 'SFS Public School, Kottayam · 97.4%', detail: '' },
+    { date: '2022 / ICSE X', category: 'EDUCATION', title: 'Secondary', subtitle: 'Pallikoodam, Kottayam · 93%', detail: '' },
+    { date: 'CERTIFIED', category: 'CERTIFICATIONS', title: 'Developer foundations', subtitle: 'WhiteHat Jr · Udemy', detail: 'Junior Developer and App Developer certifications covering HTML, CSS, JavaScript, and React.' },
+    { date: 'IEEE COMPUTER SOCIETY', category: 'ACHIEVEMENTS', title: '3rd place — Where’s The Flag', subtitle: 'CTF · 35+ teams', detail: '' },
+    { date: 'SCHOOL HONORS', category: 'ACHIEVEMENTS', title: 'Olympiad district qualifier', subtitle: 'SOF IEO and ISO · multiple-time school-level winner', detail: '' },
+    { date: 'CUSAT', category: 'ACTIVITIES', title: 'Summer Science Workshops', subtitle: 'Cochin University of Science and Technology', detail: 'Participated in the university’s summer science workshops.' },
+  ];
+
   return (
-    <div className="content-panel">
+    <div className="content-panel memory-panel">
       <div className="panel-topline"><span>MEMORY FRAGMENTS / CHRONICLE</span><span className="status-dot"><CircleDot size={12} /> INDEXED</span></div>
       <PanelTitle kicker="RECORDED PATH" title="The" accent=" chronicle" />
-      <div className="memory-list">
-        <div className="memory-entry">
-          <span className="memory-date">JUN — JUL 2026</span>
-          <div><h2>Full-stack development intern</h2><p>Antlegs Technology Solutions Pvt. Ltd.</p><small>Built authentication, profile, and user management applications with React, Django REST Framework, and MongoDB.</small></div>
-        </div>
-        <div className="memory-entry">
-          <span className="memory-date">2022 — PRESENT</span>
-          <div><h2>Computer Science Engineering</h2><p>VIT Vellore · CGPA 9.24</p><small>Building a strong foundation across software engineering, algorithms, systems, and the practical craft of turning ideas into useful products.</small></div>
-        </div>
+      <div className="memory-timeline">
+        {memories.map((memory, index) => (
+          <article className={`timeline-entry ${index % 2 === 0 ? 'is-left' : 'is-right'}`} key={`${memory.date}-${memory.title}`}>
+            <div className="timeline-time">{memory.date}</div>
+            <span className="timeline-node" aria-hidden="true" />
+            <div className="timeline-card">
+              <span>{memory.category}</span>
+              <h2>{memory.title}</h2>
+              <p>{memory.subtitle}</p>
+              {memory.detail && <small>{memory.detail}</small>}
+            </div>
+          </article>
+        ))}
       </div>
     </div>
   );
@@ -851,13 +949,13 @@ function LorePanel() {
       <PanelTitle kicker="ABOUT THE PLAYER" title="Still" accent=" becoming." />
       <div className="lore-layout">
         <div>
-          <p className="lore-lead">I am interested in the space where engineering discipline meets the feeling of discovery.</p>
-          <p className="panel-lead">From Kerala to Vellore, the work has always been a way to ask better questions. I study Computer Science, then test what I learn by making things people can actually use.</p>
+          <p className="lore-lead">Third-year B.Tech Computer Science student with hands-on full-stack development experience.</p>
+          <p className="panel-lead">Across React, Django REST Framework, and MongoDB, I turn independent projects and practical experience into reliable products. I am actively seeking software development internship and full-time opportunities.</p>
         </div>
         <div className="lore-facts">
           <div><span>ORIGIN</span><b>KERALA, INDIA</b></div>
           <div><span>CLASS</span><b>FULL-STACK DEVELOPER</b></div>
-          <div><span>INTERESTS</span><b>GAMES / AI / 3D</b></div>
+          <div><span>INTERESTS</span><b>GAME DEV / AI + AUTOMATION / 3D</b></div>
           <div><span>ARMAMENT</span><b>REACT + PYTHON</b></div>
         </div>
       </div>
@@ -875,9 +973,18 @@ function SignalPanel() {
         <Mail size={24} strokeWidth={1} />
         <div><span>PRIMARY CHANNEL</span><a href="mailto:akshay47suresh@gmail.com">akshay47suresh@gmail.com</a></div>
       </div>
+      <div className="signal-card signal-card-secondary">
+        <Mail size={24} strokeWidth={1} />
+        <div><span>DIRECT LINE</span><a href="tel:+918075292781">+91 8075292781</a></div>
+      </div>
+      <div className="signal-links">
+        <a href={profileLinks.github} target="_blank" rel="noreferrer"><Github size={16} /><span>GITHUB</span><small>AKSHAY0047</small></a>
+        <a href={profileLinks.linkedin} target="_blank" rel="noreferrer"><Linkedin size={16} /><span>LINKEDIN</span><small>AKSHAY47SURESH</small></a>
+      </div>
       <div className="signal-actions">
         <a className="game-action-button primary" href="mailto:akshay47suresh@gmail.com"><Mail size={15} /> OPEN EMAIL</a>
-        <a className="game-action-button" href="mailto:akshay47suresh@gmail.com"><Mail size={15} /> EMAIL</a>
+        <a className="game-action-button" href={profileLinks.github} target="_blank" rel="noreferrer"><Github size={15} /> GITHUB</a>
+        <a className="game-action-button" href={profileLinks.linkedin} target="_blank" rel="noreferrer"><Linkedin size={15} /> LINKEDIN</a>
       </div>
     </div>
   );
