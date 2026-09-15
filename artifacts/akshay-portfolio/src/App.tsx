@@ -1,6 +1,6 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion, useScroll, useSpring } from 'framer-motion';
 import {
   Swords,
   ArrowLeft,
@@ -11,6 +11,7 @@ import {
   Github,
   Gamepad2,
   Linkedin,
+  FileText,
   Mail,
   ShieldCheck,
   Sparkles,
@@ -920,47 +921,109 @@ function ProjectPanel({
 }) {
   const project = projects[selectedProject];
   return (
-    <div className="content-panel project-panel">
-      <div className="panel-topline">
+    <div className="content-panel project-panel flex min-h-0 flex-col overflow-hidden">
+      <div className="panel-topline shrink-0">
         <span>ITEM INSPECT / PROJECT {project.index}</span>
         <span className="status-dot"><CircleDot size={12} /> READY</span>
       </div>
-      <div className="project-inspect">
-        <div className="item-emblem">
-          <div className="combat-art-frame">
-            <img src={combatArtSrc} alt="" />
-            <span>{project.index}</span>
+
+      <section
+        className="mt-4 min-h-0 flex-1 overflow-y-auto py-4 pr-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+        aria-label={`Inspecting ${project.title}`}
+      >
+        <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,135px)_1fr] lg:items-start lg:gap-8">
+          <div className="item-emblem shrink-0">
+            <div className="combat-art-frame">
+              <img src={combatArtSrc} alt="" />
+              <span>{project.index}</span>
+            </div>
+            <span>COMBAT ART</span>
           </div>
-          <span>COMBAT ART</span>
-        </div>
-        <div className="item-copy">
-          <span className="item-type">{project.type} / {project.year}</span>
-          <h2>{project.title}</h2>
-          <p>{project.description}</p>
-          <div className="metric-line"><span>ATTRIBUTE</span><b>{project.metric}</b></div>
-          <div className="stack-list">
-            {project.stack.map((tech) => <span key={tech}>{tech}</span>)}
+
+          <div className="flex min-w-0 flex-col gap-6 py-4 pr-4">
+            <div className="flex flex-col gap-6">
+              <div className="space-y-2">
+                <span className="item-type">{project.type} / {project.year}</span>
+                <h2 className="item-copy-title">{project.title}</h2>
+              </div>
+
+              <p className="text-wrap break-words font-[family-name:var(--app-font-mono)] text-[10px] leading-relaxed text-[#aba190]">
+                {project.description}
+              </p>
+
+              <div className="metric-line">
+                <span>ATTRIBUTE</span>
+                <b>{project.metric}</b>
+              </div>
+
+              <div className="flex flex-wrap gap-2" aria-label="Tech stack">
+                {project.stack.map((tech) => (
+                  <span
+                    key={tech}
+                    className="rounded-md border border-[rgba(192,176,143,0.2)] bg-[#1c1b19] px-2 py-1 font-[family-name:var(--app-font-mono)] text-[10px] tracking-wide text-[#9e9585]"
+                  >
+                    {tech}
+                  </span>
+                ))}
+              </div>
+
+              {project.detail && (
+                <p className="text-wrap break-words rounded-sm border-l-2 border-[var(--amber)] bg-[#1c1b19] px-3 py-3 font-[family-name:var(--app-font-mono)] text-[10px] leading-relaxed text-[#9e9585]">
+                  {project.detail}
+                </p>
+              )}
+            </div>
+
+            <a
+              className="project-repo-link inline-flex w-fit items-center gap-2"
+              href={project.repoUrl ?? profileLinks.github}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Github size={14} />
+              {project.repoUrl ? 'OPEN GITHUB REPOSITORY' : 'BROWSE GITHUB PROFILE'}
+            </a>
           </div>
-          <a className="project-repo-link" href={project.repoUrl ?? profileLinks.github} target="_blank" rel="noreferrer">
-            <Github size={14} /> {project.repoUrl ? 'OPEN GITHUB REPOSITORY' : 'BROWSE GITHUB PROFILE'}
-          </a>
         </div>
-      </div>
-      <div className="project-detail">{project.detail}</div>
-      <div className="project-switcher">
-        {projects.map((entry, index) => (
-          <button
-            type="button"
-            className={index === selectedProject ? 'selected' : ''}
-            key={entry.index}
-            onClick={() => onProjectChange(index)}
-            aria-label={`Inspect ${entry.title}`}
-            data-testid={`button-project-${index + 1}`}
-          >
-            {entry.index}
-          </button>
-        ))}
-      </div>
+      </section>
+
+      <nav
+        className="mt-6 shrink-0 border-t border-[rgba(190,176,148,0.16)] pt-4"
+        aria-label="Project inventory"
+      >
+        {projects.map((entry, index) => {
+          const isSelected = index === selectedProject;
+          return (
+            <button
+              type="button"
+              key={entry.index}
+              onClick={() => onProjectChange(index)}
+              aria-label={`Inspect ${entry.title}`}
+              aria-current={isSelected ? 'true' : undefined}
+              data-testid={`button-project-${index + 1}`}
+              className={[
+                'group flex w-full items-center justify-between rounded-sm border border-transparent px-3 py-2.5 text-left transition-all duration-300 ease-out',
+                'text-[#6e6659] hover:translate-x-2 hover:border-amber-500/20 hover:bg-amber-500/10 hover:text-[#f0e4c8]',
+                isSelected
+                  ? 'translate-x-1 border-amber-500/35 bg-amber-500/12 text-[#f5e6c4]'
+                  : '',
+              ].join(' ')}
+            >
+              <span className="truncate font-[family-name:var(--app-font-mono)] text-[10px] tracking-[0.08em] uppercase">
+                {entry.title}
+              </span>
+              <span
+                className={[
+                  'ml-3 shrink-0 font-[family-name:var(--app-font-mono)] text-[8px] tracking-widest transition-colors duration-300',
+                  isSelected ? 'text-amber-300/90' : 'text-[#8a7f6e] group-hover:text-amber-400/90',
+                ].join(' ')}
+              >
+                {entry.year}
+              </span>
+            </button>
+          );
+        })}
+      </nav>
     </div>
   );
 }
@@ -1015,45 +1078,51 @@ type Memory = {
   detail: string;
 };
 
-function TimelineEntry({ memory, index }: { memory: Memory; index: number }) {
-  const entryRef = useRef<HTMLElement>(null);
-  const [revealed, setRevealed] = useState(false);
-
-  useEffect(() => {
-    const entry = entryRef.current;
-    if (!entry) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) {
-      setRevealed(true);
-      return;
-    }
-    const timeline = entry.parentElement;
-    const observer = new IntersectionObserver(
-      ([event]) => {
-        if (!event.isIntersecting) return;
-        setRevealed(true);
-        observer.unobserve(entry);
-      },
-      { root: timeline, rootMargin: '0px 0px -10% 0px', threshold: 0.18 },
-    );
-    observer.observe(entry);
-    return () => observer.disconnect();
-  }, []);
+function TimelineEntry({
+  memory,
+  index,
+  scrollContainerRef,
+}: {
+  memory: Memory;
+  index: number;
+  scrollContainerRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  const prefersReducedMotion = useReducedMotion();
 
   return (
-    <article ref={entryRef} className={`timeline-entry ${index % 2 === 0 ? 'is-left' : 'is-right'} ${revealed ? 'is-revealed' : ''}`}>
+    <article className={`timeline-entry ${index % 2 === 0 ? 'is-left' : 'is-right'}`}>
       <div className="timeline-time">{memory.date}</div>
       <span className="timeline-node" aria-hidden="true" />
-      <div className="timeline-card">
+      <motion.div
+        className="timeline-card"
+        initial={prefersReducedMotion ? false : { opacity: 0.2, y: 28 }}
+        whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+        viewport={{ once: false, margin: '-100px', root: scrollContainerRef }}
+        transition={{ duration: 0.42, ease: [0.23, 1, 0.32, 1] }}
+      >
         <span>{memory.category}</span>
         <h2>{memory.title}</h2>
         <p>{memory.subtitle}</p>
         {memory.detail && <small>{memory.detail}</small>}
-      </div>
+      </motion.div>
     </article>
   );
 }
 
 function MemoriesPanel() {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const timelineContentRef = useRef<HTMLDivElement>(null);
+  const prefersReducedMotion = useReducedMotion();
+  const { scrollYProgress } = useScroll({
+    target: timelineContentRef,
+    container: scrollContainerRef,
+    offset: ['start 80%', 'end 50%'],
+  });
+  const smoothProgress = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001,
+  });
   const memories: Memory[] = [
     { date: 'JUN — JUL 2026', category: 'EXPERIENCE', title: 'Full-stack development intern', subtitle: 'Antlegs Technology Solutions Pvt. Ltd.', detail: 'Built authentication, profile, and user-management applications with React, Django REST Framework, and MongoDB.' },
     { date: '2024 — PRESENT', category: 'EDUCATION', title: 'Computer Science Engineering', subtitle: 'VIT Vellore · CGPA 9.24', detail: 'Software engineering, algorithms, systems, and the practical craft of turning ideas into useful products.' },
@@ -1070,10 +1139,28 @@ function MemoriesPanel() {
     <div className="content-panel memory-panel">
       <div className="panel-topline"><span>MEMORY FRAGMENTS / CHRONICLE</span><span className="status-dot"><CircleDot size={12} /> INDEXED</span></div>
       <PanelTitle kicker="RECORDED PATH" title="The" accent=" chronicle" />
-      <div className="memory-timeline">
-        {memories.map((memory, index) => (
-          <TimelineEntry key={`${memory.date}-${memory.title}`} memory={memory} index={index} />
-        ))}
+      <div className="memory-timeline" ref={scrollContainerRef}>
+        <div className="memory-timeline-content" ref={timelineContentRef}>
+          <div className="memory-timeline-axis absolute inset-y-0 left-1/2 -translate-x-1/2" aria-hidden="true">
+            <div className="memory-timeline-axis-track" />
+            <motion.div
+              className="memory-timeline-axis-progress origin-top"
+              style={
+                prefersReducedMotion
+                  ? { scaleY: 1, transformOrigin: 'top' }
+                  : { scaleY: smoothProgress, transformOrigin: 'top' }
+              }
+            />
+          </div>
+          {memories.map((memory, index) => (
+            <TimelineEntry
+              key={`${memory.date}-${memory.title}`}
+              memory={memory}
+              index={index}
+              scrollContainerRef={scrollContainerRef}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -1120,6 +1207,13 @@ function SignalPanel() {
       </div>
       <div className="signal-actions">
         <a className="game-action-button primary" href="mailto:akshay47suresh@gmail.com"><Mail size={15} /> OPEN EMAIL</a>
+        <a
+          className="game-action-button"
+          href={`${import.meta.env.BASE_URL}Akshay_Resume.docx`}
+          download="Akshay_Suresh_Resume.docx"
+        >
+          <FileText size={15} /> VIEW RESUME
+        </a>
         <a className="game-action-button" href={profileLinks.github} target="_blank" rel="noreferrer"><Github size={15} /> GITHUB</a>
         <a className="game-action-button" href={profileLinks.linkedin} target="_blank" rel="noreferrer"><Linkedin size={15} /> LINKEDIN</a>
       </div>
