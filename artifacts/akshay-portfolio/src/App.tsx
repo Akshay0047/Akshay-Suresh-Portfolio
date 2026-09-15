@@ -1278,7 +1278,7 @@ function SignalPanel() {
 function MainMenu({ onReturnToLanding }: { onReturnToLanding: () => void }) {
   const [menuIndex, setMenuIndex] = useState(0);
   const [projectIndex, setProjectIndex] = useState(0);
-  const [topTab, setTopTab] = useState('INVENTORY');
+  const [topTab, setTopTab] = useState('EQUIPMENT');
   const [showOptions, setShowOptions] = useState(false);
 
   const activeMenu = menuItems[menuIndex];
