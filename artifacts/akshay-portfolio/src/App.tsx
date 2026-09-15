@@ -1189,33 +1189,48 @@ function LorePanel() {
 
 function SignalPanel() {
   return (
-    <div className="content-panel signal-panel">
-      <div className="panel-topline"><span>COMMUNICATION / SIGNAL</span><span className="status-dot"><CircleDot size={12} /> OPEN</span></div>
-      <PanelTitle kicker="OPEN CHANNEL" title="Send" accent=" a signal." />
-      <p className="panel-lead signal-lead">Have a product, puzzle, or problem worth giving some attention to? The channel is open.</p>
-      <div className="signal-card">
-        <Mail size={24} strokeWidth={1} />
-        <div><span>PRIMARY CHANNEL</span><a href="mailto:akshay47suresh@gmail.com">akshay47suresh@gmail.com</a></div>
+    <div className="content-panel signal-panel flex h-full min-h-0 flex-col justify-between overflow-hidden">
+      <div className="panel-topline shrink-0">
+        <span>COMMUNICATION / SIGNAL</span>
+        <span className="status-dot"><CircleDot size={12} /> OPEN</span>
       </div>
-      <div className="signal-card signal-card-secondary">
-        <Mail size={24} strokeWidth={1} />
-        <div><span>DIRECT LINE</span><a href="tel:+918075292781">+91 8075292781</a></div>
-      </div>
-      <div className="signal-links">
-        <a href={profileLinks.github} target="_blank" rel="noreferrer"><Github size={16} /><span>GITHUB</span><small>AKSHAY0047</small></a>
-        <a href={profileLinks.linkedin} target="_blank" rel="noreferrer"><Linkedin size={16} /><span>LINKEDIN</span><small>AKSHAY47SURESH</small></a>
-      </div>
-      <div className="signal-actions">
-        <a className="game-action-button primary" href="mailto:akshay47suresh@gmail.com"><Mail size={15} /> OPEN EMAIL</a>
-        <a
-          className="game-action-button"
-          href={`${import.meta.env.BASE_URL}Akshay_Resume.docx`}
-          download="Akshay_Suresh_Resume.docx"
-        >
-          <FileText size={15} /> VIEW RESUME
-        </a>
-        <a className="game-action-button" href={profileLinks.github} target="_blank" rel="noreferrer"><Github size={15} /> GITHUB</a>
-        <a className="game-action-button" href={profileLinks.linkedin} target="_blank" rel="noreferrer"><Linkedin size={15} /> LINKEDIN</a>
+
+      <div className="flex min-h-0 flex-1 flex-col justify-between">
+        <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-3">
+            <PanelTitle kicker="OPEN CHANNEL" title="Send" accent=" a signal." />
+            <p className="panel-lead signal-lead">
+              Have a product, puzzle, or problem worth giving some attention to? The channel is open.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <div className="signal-card">
+              <Mail size={20} strokeWidth={1} />
+              <div><span>PRIMARY CHANNEL</span><a href="mailto:akshay47suresh@gmail.com">akshay47suresh@gmail.com</a></div>
+            </div>
+            <div className="signal-card signal-card-secondary">
+              <Mail size={20} strokeWidth={1} />
+              <div><span>DIRECT LINE</span><a href="tel:+918075292781">+91 8075292781</a></div>
+            </div>
+          </div>
+        </div>
+
+        <div className="signal-footer shrink-0">
+          <div className="signal-actions grid grid-cols-2 gap-4">
+            <a className="game-action-button py-2" href="mailto:akshay47suresh@gmail.com"><Mail size={14} /> OPEN EMAIL</a>
+            <a
+              className="game-action-button py-2"
+              href="/Akshay_Resume.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <FileText size={14} /> VIEW RESUME
+            </a>
+            <a className="game-action-button py-2" href={profileLinks.github} target="_blank" rel="noreferrer"><Github size={14} /> GITHUB</a>
+            <a className="game-action-button py-2" href={profileLinks.linkedin} target="_blank" rel="noreferrer"><Linkedin size={14} /> LINKEDIN</a>
+          </div>
+        </div>
       </div>
     </div>
   );

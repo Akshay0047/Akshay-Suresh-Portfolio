@@ -1132,8 +1132,34 @@
   max-width: 500px;
 }
 
-.signal-panel > .signal-card {
-  margin-top: 15px;
+.signal-panel.content-panel {
+  padding: clamp(16px, 2.2vw, 30px);
+}
+
+.signal-panel .panel-title {
+  margin-top: clamp(8px, 1.4vh, 14px);
+}
+
+.signal-panel .panel-kicker {
+  margin-bottom: 6px;
+}
+
+.signal-panel .panel-title h1 {
+  font-size: clamp(34px, 4.2vw, 58px);
+}
+
+.signal-panel .panel-lead {
+  margin-top: 0;
+  line-height: 1.5;
+}
+
+.signal-panel .signal-card {
+  margin-top: 0;
+}
+
+.signal-panel .signal-card,
+.signal-panel .signal-card-secondary {
+  margin-top: 0 !important;
 }
 
 .signal-card {
@@ -2702,7 +2728,7 @@ kbd {
     font-size: 7px;
   }
 
-  .signal-panel > .signal-card {
+  .signal-panel .signal-card {
     margin-top: 10px;
     padding: 13px 14px;
   }
@@ -2916,34 +2942,37 @@ kbd {
   -webkit-line-clamp: 1;
 }
 
-.signal-panel > .signal-card,
-.signal-panel > .signal-card-secondary {
+.signal-panel .signal-card,
+.signal-panel .signal-card-secondary {
   flex: 0 0 auto;
-  margin-top: 10px;
-  padding: 13px 16px;
+  margin-top: 0;
+  padding: 10px 12px;
+  gap: 12px;
 }
 
-.signal-panel > .signal-card-secondary {
-  margin-top: 8px;
+.signal-panel .signal-card-secondary {
+  margin-top: 0;
 }
 
 .signal-panel .signal-card a {
   overflow-wrap: anywhere;
 }
 
+.signal-panel .signal-footer {
+  padding-right: clamp(118px, 20vw, 168px);
+  padding-top: 8px;
+}
+
 .signal-panel .signal-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 7px;
   width: 100%;
-  margin-top: auto;
-  padding-top: 12px;
+  margin-top: 0;
+  padding-top: 0;
 }
 
 .signal-panel .signal-actions .game-action-button {
   min-width: 0;
   justify-content: center;
-  padding: 9px 8px;
+  padding: 8px 10px;
   font-size: 8px;
 }
 
@@ -3005,14 +3034,13 @@ kbd {
     display: none;
   }
 
-  .signal-panel .signal-actions {
-    gap: 5px;
-    padding-top: 10px;
+  .signal-panel .signal-footer {
+    padding-right: 96px;
   }
 
   .signal-panel .signal-actions .game-action-button {
     gap: 4px;
-    padding: 8px 5px;
+    padding: 7px 6px;
     font-size: 6px;
     letter-spacing: 0.07em;
   }
