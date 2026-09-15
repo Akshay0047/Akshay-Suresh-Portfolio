@@ -17,6 +17,7 @@ import {
   Sparkles,
   X,
 } from 'lucide-react';
+import Atmosphere from '@/components/Atmosphere';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -238,7 +239,7 @@ function LoadingScreen({ onComplete }: { onComplete: () => void }) {
 
   return (
     <motion.div
-      className={`loading-screen ${isStriking ? 'is-striking' : ''}`}
+      className={`loading-screen fixed inset-0 z-[100] ${isStriking ? 'is-striking' : ''}`}
       initial={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.42, ease: [0.23, 1, 0.32, 1] }}
@@ -837,7 +838,6 @@ function TitleScreen({ onContinue, onOptions }: { onContinue: () => void; onOpti
       exit={{ opacity: 0 }}
       transition={{ duration: 0.65 }}
     >
-      <Particles count={22} />
       <div className="title-vignette" />
       <div className="title-meta"><span>AS / FIELD ARCHIVE</span><span>VER. 2026.09</span></div>
       <div className="title-watermark">葦</div>
@@ -1299,7 +1299,6 @@ function MainMenu({ onReturnToLanding }: { onReturnToLanding: () => void }) {
 
   return (
     <main className="game-screen">
-      <Particles />
       <div className="screen-vignette" />
       <div className="screen-scanlines" />
       <header className="game-header">
@@ -1401,30 +1400,32 @@ function Home() {
   const completeLoading = useCallback(() => setIsLoading(false), []);
   return (
     <div className="portfolio-app">
-      <SwordCursor />
-      <AnimatePresence mode="wait">
-        {screen === 'title' && !openTitleOptions && (
-          <TitleScreen key="title" onContinue={() => setScreen('menu')} onOptions={() => setOpenTitleOptions(true)} />
-        )}
-        {screen === 'title' && openTitleOptions && (
-          <motion.div className="title-options-backdrop" key="title-options" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <div className="title-options">
-              <div className="panel-topline"><span>SETTINGS</span><button type="button" onClick={() => setOpenTitleOptions(false)} aria-label="Close settings"><X size={17} /></button></div>
-              <p>Interface motion and input are ready for the archive.</p>
-              <button className="game-action-button primary" type="button" onClick={() => setOpenTitleOptions(false)}>RETURN</button>
-            </div>
-          </motion.div>
-        )}
-        {screen === 'menu' && (
-          <MainMenu
-            key="menu"
-            onReturnToLanding={() => {
-              setOpenTitleOptions(false);
-              setScreen('title');
-            }}
-          />
-        )}
-      </AnimatePresence>
+      <div className="portfolio-ui relative z-10 h-full min-h-0 bg-transparent">
+        <SwordCursor />
+        <AnimatePresence mode="wait">
+          {screen === 'title' && !openTitleOptions && (
+            <TitleScreen key="title" onContinue={() => setScreen('menu')} onOptions={() => setOpenTitleOptions(true)} />
+          )}
+          {screen === 'title' && openTitleOptions && (
+            <motion.div className="title-options-backdrop" key="title-options" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <div className="title-options">
+                <div className="panel-topline"><span>SETTINGS</span><button type="button" onClick={() => setOpenTitleOptions(false)} aria-label="Close settings"><X size={17} /></button></div>
+                <p>Interface motion and input are ready for the archive.</p>
+                <button className="game-action-button primary" type="button" onClick={() => setOpenTitleOptions(false)}>RETURN</button>
+              </div>
+            </motion.div>
+          )}
+          {screen === 'menu' && (
+            <MainMenu
+              key="menu"
+              onReturnToLanding={() => {
+                setOpenTitleOptions(false);
+                setScreen('title');
+              }}
+            />
+          )}
+        </AnimatePresence>
+      </div>
       <AnimatePresence>{isLoading && <LoadingScreen key="loading" onComplete={completeLoading} />}</AnimatePresence>
     </div>
   );
@@ -1451,7 +1452,10 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-          <Router />
+          <Atmosphere />
+          <div className="app-shell relative z-10 h-full min-h-0 bg-transparent">
+            <Router />
+          </div>
         </WouterRouter>
         <Toaster />
       </TooltipProvider>

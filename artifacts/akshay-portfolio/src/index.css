@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Noto+Serif+JP:wght@400;500&family=Space+Mono:wght@400;700&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
@@ -26,7 +26,14 @@
     box-sizing: border-box;
   }
 
-  html,
+  html {
+    margin: 0;
+    width: 100%;
+    min-width: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+
   body,
   #root {
     margin: 0;
@@ -34,13 +41,20 @@
     min-width: 0;
     height: 100%;
     overflow: hidden;
-    background: var(--ink-deep);
+    background:
+      radial-gradient(ellipse at 72% 18%, rgba(101, 77, 46, 0.12), transparent 33%),
+      linear-gradient(115deg, #111110 0%, #161512 50%, #0f0f0e 100%);
   }
 
   body {
     color: var(--paper);
     font-family: var(--app-font-mono);
     -webkit-font-smoothing: antialiased;
+  }
+
+  #root {
+    position: relative;
+    isolation: isolate;
   }
 
   button,
@@ -66,23 +80,32 @@
 }
 
 .portfolio-app {
+  position: relative;
   width: 100%;
   height: 100%;
   min-height: 560px;
   overflow: hidden;
+  background: transparent;
+}
+
+.app-shell,
+.portfolio-ui {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  background: transparent;
 }
 
 .game-screen,
-.loading-screen,
 .title-screen {
   position: relative;
   width: 100%;
   height: 100dvh;
   min-height: 560px;
   overflow: hidden;
-  background:
-    radial-gradient(ellipse at 72% 18%, rgba(101, 77, 46, 0.12), transparent 33%),
-    linear-gradient(115deg, #111110 0%, #161512 50%, #0f0f0e 100%);
+  background: transparent;
 }
 
 .game-screen::before,
@@ -129,6 +152,14 @@
     transparent 3px,
     rgba(225, 210, 181, 0.6) 4px
   );
+}
+
+.atmosphere-kanji {
+  color: rgba(168, 152, 120, 0.05);
+  font-family: 'Noto Serif JP', var(--app-font-serif), Georgia, serif;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  user-select: none;
 }
 
 .particles {
@@ -184,12 +215,17 @@
 
 .loading-screen {
   position: fixed;
+  inset: 0;
   z-index: 100;
+  width: 100%;
+  height: 100dvh;
+  min-height: 560px;
   display: grid;
   place-items: center;
+  overflow: hidden;
   background:
     radial-gradient(ellipse at 50% 46%, rgba(82, 62, 39, 0.2), transparent 38%),
-    #111110;
+    #0f0f0e;
 }
 
 .loading-mark {
@@ -1682,9 +1718,7 @@ kbd {
   z-index: 30;
   display: grid;
   place-items: center;
-  background:
-    radial-gradient(ellipse at 50% 43%, rgba(55, 42, 27, 0.14), transparent 35%),
-    #090909;
+  background: transparent;
 }
 
 .title-vignette {
@@ -1859,9 +1893,7 @@ kbd {
 }
 
 .game-screen {
-  background:
-    radial-gradient(ellipse at 72% 18%, rgba(128, 93, 48, 0.16), transparent 33%),
-    linear-gradient(115deg, #292824 0%, #34312b 50%, #211f1b 100%);
+  background: transparent;
 }
 
 .game-screen .screen-vignette {
@@ -2275,12 +2307,7 @@ kbd {
 }
 
 .game-screen {
-  background:
-    radial-gradient(ellipse at 18% 22%, rgba(184, 111, 43, 0.16), transparent 29%),
-    radial-gradient(ellipse at 86% 76%, rgba(92, 119, 113, 0.14), transparent 33%),
-    linear-gradient(120deg, #181816 0%, #302d27 48%, #111210 100%);
-  background-size: 135% 135%, 125% 125%, 100% 100%;
-  animation: menu-ambient 16s ease-in-out infinite alternate;
+  background: transparent;
 }
 
 .game-screen .particles::before {
