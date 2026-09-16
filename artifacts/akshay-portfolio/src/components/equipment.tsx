@@ -1,6 +1,6 @@
 import '@google/model-viewer';
-import { motion, useReducedMotion } from 'framer-motion';
-import { CircleDot, Code2, Crosshair, Database, ShieldCheck, Sparkles } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { CircleDot, Code2, Crosshair, Database, Sparkles } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useEffect, useRef, type RefObject } from 'react';
 
@@ -123,7 +123,6 @@ function ProstheticToolCard({ modelRef }: { modelRef: RefObject<HTMLElement | nu
 
 export function EquipmentPanel() {
   const modelRef = useRef<HTMLElement | null>(null);
-  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
@@ -153,12 +152,12 @@ export function EquipmentPanel() {
         <h1>The<span> arsenal</span></h1>
       </div>
 
-      <div className="equipment-loadout-arena relative mx-auto mt-4 h-[750px] w-full max-w-[1300px]">
+      <div className="equipment-loadout-arena absolute inset-0 z-20 h-full w-full pointer-events-none">
         {/* 1. CENTER: The Portrait with Ink Fade Mask */}
-        <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 h-[620px] w-[380px] -translate-x-1/2 -translate-y-1/2">
+        <div className="absolute bottom-[20px] left-1/2 -translate-x-1/2 z-10 scale-90 origin-bottom pointer-events-auto">
           <img
             src={portraitSrc}
-            className="h-full w-full object-cover object-center opacity-65 grayscale contrast-125 sepia-[.3] mix-blend-luminosity"
+            className="h-[620px] w-[380px] object-cover object-center opacity-65 grayscale contrast-125 sepia-[.3] mix-blend-luminosity"
             style={{
               WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 25%, black 70%, transparent 100%), radial-gradient(circle at 50% 50%, black 50%, transparent 90%)',
               maskImage: 'linear-gradient(to bottom, transparent 0%, black 25%, black 70%, transparent 100%), radial-gradient(circle at 50% 50%, black 50%, transparent 90%)',
@@ -169,13 +168,9 @@ export function EquipmentPanel() {
           />
         </div>
 
-        {/* 2. THE ARC: Floating Equipment Cards (Staggered to form a clean semi-circle) */}
-
-        {/* React (Top Left) */}
+        {/* 2. Four independently positioned loadout cards. */}
         <motion.div
-          animate={prefersReducedMotion ? undefined : { y: [-8, 8, -8] }}
-          transition={prefersReducedMotion ? undefined : { duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute top-[12%] left-[4%] z-40 w-[280px] lg:w-[310px]"
+          className="absolute top-[220px] left-[4%] z-30 w-[300px] pointer-events-auto"
         >
           <EquipmentSlot
             slot="PRIMARY ARM"
@@ -186,11 +181,8 @@ export function EquipmentPanel() {
           />
         </motion.div>
 
-        {/* Python (Bottom Left - Pushed inward to create the curve) */}
         <motion.div
-          animate={prefersReducedMotion ? undefined : { y: [-8, 8, -8] }}
-          transition={prefersReducedMotion ? undefined : { duration: 4.5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
-          className="absolute top-[62%] left-[10%] z-40 w-[280px] lg:w-[310px]"
+          className="absolute bottom-[80px] left-[14%] z-30 w-[300px] pointer-events-auto"
         >
           <EquipmentSlot
             slot="SECONDARY ARM"
@@ -201,36 +193,14 @@ export function EquipmentPanel() {
           />
         </motion.div>
 
-        {/* Right wing — Kunai + Django stacked to prevent vertical collision */}
-        <div className="equipment-right-wing absolute top-[6%] right-[4%] z-40 flex w-[320px] flex-col gap-4">
-          <motion.div
-            animate={prefersReducedMotion ? undefined : { y: [-8, 8, -8] }}
-            transition={prefersReducedMotion ? undefined : { duration: 4.2, repeat: Infinity, ease: 'easeInOut', delay: 0.2 }}
-            className="h-[295px] w-full shrink-0"
-          >
-            <ProstheticToolCard modelRef={modelRef} />
-          </motion.div>
-
-          <motion.div
-            animate={prefersReducedMotion ? undefined : { y: [-8, 8, -8] }}
-            transition={prefersReducedMotion ? undefined : { duration: 4.3, repeat: Infinity, ease: 'easeInOut', delay: 0.35 }}
-            className="w-full"
-          >
-            <EquipmentSlot
-              slot="API FRAME"
-              title="DJANGO REST"
-              detail="Structured APIs with authentication, permissions, and dependable data flow."
-              icon={ShieldCheck}
-              align="left"
-            />
-          </motion.div>
-        </div>
-
-        {/* Databases (Bottom Right arc) */}
         <motion.div
-          animate={prefersReducedMotion ? undefined : { y: [-8, 8, -8] }}
-          transition={prefersReducedMotion ? undefined : { duration: 4.7, repeat: Infinity, ease: 'easeInOut', delay: 0.7 }}
-          className="absolute top-[67%] right-[8%] z-40 w-[280px] lg:w-[310px]"
+          className="absolute top-[120px] right-[4%] z-50 w-[320px] pointer-events-auto"
+        >
+          <ProstheticToolCard modelRef={modelRef} />
+        </motion.div>
+
+        <motion.div
+          className="absolute bottom-[80px] right-[12%] z-30 w-[340px] pointer-events-auto"
         >
           <EquipmentSlot
             slot="CONSUMABLES / DATABASES"

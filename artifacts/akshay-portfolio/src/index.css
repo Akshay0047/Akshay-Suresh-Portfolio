@@ -2021,14 +2021,6 @@ kbd {
   isolation: isolate;
 }
 
-.equipment-right-wing {
-  pointer-events: none;
-}
-
-.equipment-right-wing > * {
-  pointer-events: auto;
-}
-
 .equipment-panel model-viewer {
   position: relative;
   z-index: 2;
