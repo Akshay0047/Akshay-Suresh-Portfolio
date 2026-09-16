@@ -96,7 +96,7 @@ function ProstheticToolCard({ modelRef }: { modelRef: RefObject<HTMLElement | nu
         </div>
       </header>
 
-      <div className="prosthetic-viewport relative my-1.5 h-[180px] w-full shrink-0 overflow-hidden border border-[rgba(74,59,44,0.55)] bg-[rgba(8,7,6,0.72)]">
+      <div className="prosthetic-viewport relative my-1.5 h-[140px] w-full shrink-0 overflow-hidden border border-[rgba(74,59,44,0.55)] bg-[rgba(8,7,6,0.72)]">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,rgba(213,155,88,0.08),transparent_58%)]" aria-hidden="true" />
         <model-viewer
           ref={modelRef}
@@ -130,8 +130,8 @@ export function EquipmentPanel() {
 
       const xPercent = event.clientX / window.innerWidth - 0.5;
       const yPercent = event.clientY / window.innerHeight - 0.5;
-      const orbitX = -45 - xPercent * 50;
-      const orbitY = 55 - yPercent * 30;
+      const orbitX = -45 - xPercent * 100;
+      const orbitY = 55 - yPercent * 70;
 
       modelRef.current.setAttribute('camera-orbit', `${orbitX}deg ${orbitY}deg auto`);
     };
@@ -194,13 +194,13 @@ export function EquipmentPanel() {
         </motion.div>
 
         <motion.div
-          className="absolute top-[120px] right-[4%] z-50 w-[320px] pointer-events-auto"
+        className="absolute top-[50px] right-[9%] z-50 w-[280px] pointer-events-auto"
         >
           <ProstheticToolCard modelRef={modelRef} />
         </motion.div>
 
         <motion.div
-          className="absolute bottom-[80px] right-[12%] z-30 w-[340px] pointer-events-auto"
+          className="absolute bottom-[30px] right-[12%] z-30 w-[340px] pointer-events-auto"
         >
           <EquipmentSlot
             slot="CONSUMABLES / DATABASES"
