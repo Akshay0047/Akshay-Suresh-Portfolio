@@ -21,7 +21,12 @@ import Atmosphere from '@/components/Atmosphere';
 import { BladeButton } from '@/components/blade-button';
 import { EquipmentPanel } from '@/components/equipment';
 import { AssetWarmup } from '@/components/asset-warmup';
-import { LoadProfileExperience } from '@/components/load-profile';
+import {
+  LoadProfileExperience,
+  PARCHMENT_HEIGHT_LORE,
+  ParchmentScroll,
+  ROD_OFFSET_LORE,
+} from '@/components/load-profile';
 import { LoadingScreen } from '@/components/loading-screen';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
@@ -38,13 +43,12 @@ const profileLinks = {
   linkedin: 'https://www.linkedin.com/in/akshay47suresh',
 };
 
-const combatArtSrc = `${import.meta.env.BASE_URL}combat-art.png`;
-
 type Project = {
   index: string;
   title: string;
   type: string;
   year: string;
+  kanji: string;
   description: string;
   stack: string[];
   detail: string;
@@ -55,9 +59,39 @@ type Project = {
 const projects: Project[] = [
   {
     index: '01',
+    title: 'Disaster Response Coordination',
+    type: 'AI SYSTEM',
+    year: '2026',
+    kanji: '救',
+    description:
+      'An AWS-backed agentic AI coordinator that analyzes emergencies, prioritizes relief requests, and orchestrates rescue resources in real time.',
+    stack: ['Python', 'FastAPI', 'PostgreSQL', 'AWS', 'Claude AI', 'SQS', 'SNS', 'S3'],
+    detail:
+      'A cloud-native disaster response platform where a Claude-powered Agentic AI coordinator observes emergency situations, plans responses, and executes authorized actions through controlled tools. Phase 1 delivers the FastAPI backend with PostgreSQL, JWT authentication, and role-based access for citizens, volunteers, and admins — covering emergency request intake, volunteer availability, shelters, resources, and assignments. The architecture targets AWS services (RDS, SQS, SNS, S3) with a dedicated agent worker planned for autonomous replanning as conditions evolve.',
+    metric: 'AGENTIC AI',
+    repoUrl:
+      'https://github.com/Akshay0047/Agentic-AI-Based-Disaster-Response-and-Relief-Coordination-System',
+  },
+  {
+    index: '02',
+    title: 'RAG PDF Reader',
+    type: 'AI SYSTEM',
+    year: '2026',
+    kanji: '智',
+    description:
+      'A hand-built RAG pipeline that ingests PDFs and answers questions grounded in your documents, with a LangChain version for direct comparison.',
+    stack: ['Python', 'ChromaDB', 'Sentence Transformers', 'Groq API', 'LangChain', 'pypdf'],
+    detail:
+      'Built every stage of Retrieval-Augmented Generation from scratch in plain Python — document loading, sentence-aware chunking with overlap, local MiniLM embeddings, ChromaDB vector storage, cosine-similarity retrieval, and Groq-powered generation with strict context-only prompting. Reimplemented the same pipeline with LangChain to compare framework abstractions against raw mechanics. Includes isolated stage scripts for debugging each step, separate persisted indexes for both versions, and documented fixes for Windows dependency issues around chromadb 1.x wheels and httpx pinning.',
+    metric: 'RAG PIPELINE',
+    repoUrl: 'https://github.com/Akshay0047/RAG-PDF-Reader',
+  },
+  {
+    index: '03',
     title: 'Authentication & Profile',
     type: 'FULL-STACK SYSTEM',
     year: '2025',
+    kanji: '術',
     description: 'Secure registration, login, profile viewing, and profile editing with a responsive React frontend.',
     stack: ['React', 'Django REST', 'MongoDB', 'JWT'],
     detail: 'Manual JWT validation protected API endpoints while working around MongoDB ObjectId compatibility with Django ORM.',
@@ -65,21 +99,11 @@ const projects: Project[] = [
     repoUrl: 'https://github.com/Akshay0047/Authentication-Profile-Management-Application',
   },
   {
-    index: '02',
-    title: 'User Management',
-    type: 'ADMINISTRATION TOOL',
-    year: '2025',
-    description: 'A full CRUD system for managing users, roles, and permissions.',
-    stack: ['React', 'Redux Toolkit', 'Django REST', 'MongoDB'],
-    detail: 'Added bcrypt hashing, httpOnly cookies, and an Axios token-refresh interceptor. Identified and fixed broken access control.',
-    metric: 'FULL CRUD',
-    repoUrl: 'https://github.com/Akshay0047/User-Management-System',
-  },
-  {
-    index: '03',
+    index: '04',
     title: 'AI Discord Chatbot',
     type: 'CONVERSATIONAL TOOL',
     year: '2024',
+    kanji: '幻',
     description: 'A multifunctional Discord bot with intelligent queries, reminders, timers, and moderation.',
     stack: ['Python', 'Discord.py', 'Gemini API'],
     detail: 'Combined AI-assisted responses with reminders, timers, automated replies, music playback, utility commands, and server moderation.',
@@ -87,20 +111,22 @@ const projects: Project[] = [
     repoUrl: 'https://github.com/Akshay0047/DiscordBot-Pookie',
   },
   {
-    index: '04',
+    index: '05',
     title: 'Emotion-Based Song Recommender',
     type: 'COMPUTER VISION',
     year: '2024',
+    kanji: '魂',
     description: 'Real-time emotion detection that turns facial signals into music recommendations.',
     stack: ['Python', 'Machine Learning', 'Computer Vision'],
     detail: 'Used webcam input and facial landmark mapping to train a model that classifies emotions and triggers dynamic YouTube searches.',
     metric: 'REAL-TIME ML',
   },
   {
-    index: '05',
+    index: '06',
     title: 'JavaScript Games',
     type: 'INTERACTION STUDIES',
     year: '2023–24',
+    kanji: '遊',
     description: 'Browser games built to sharpen logic, event handling, and interaction design.',
     stack: ['JavaScript', 'Node.js', 'DOM'],
     detail: 'Created multiple browser games focused on JavaScript logic, event handling, DOM manipulation, problem solving, and user interaction design.',
@@ -846,6 +872,52 @@ const inkBleedAnimate = {
 
 const inkBleedTransition = { duration: 0.75, ease: 'easeOut' as const };
 
+function ProjectLoreScrollContent({ project }: { project: Project }) {
+  return (
+    <motion.div
+      className="scroll-chapter-details w-full"
+      initial={{ opacity: 0, filter: 'blur(8px)' }}
+      animate={{ opacity: 1, filter: 'blur(0px)' }}
+      exit={{ opacity: 0, filter: 'blur(8px)' }}
+      transition={{ duration: 0.55, ease: 'easeOut' }}
+    >
+      <div className="custom-scroll my-2 max-h-[55vh] w-full overflow-y-auto pr-3">
+        <header className="scroll-content-header">
+          <span className="scroll-content-kicker">{project.type} / {project.year}</span>
+          <h2 className="scroll-content-title">{project.title}</h2>
+          <p className="scroll-content-lead">{project.metric}</p>
+        </header>
+
+        <section className="scroll-chapter-section">
+          <h3>ARMAMENTS / STACK</h3>
+          <div className="scroll-lore-stack" aria-label="Tech stack">
+            {project.stack.map((tech) => (
+              <span key={tech} className="scroll-lore-chip">{tech}</span>
+            ))}
+          </div>
+        </section>
+
+        {project.detail && (
+          <section className="scroll-chapter-section">
+            <h3>CHRONICLE</h3>
+            <p className="scroll-chapter-background">{project.detail}</p>
+          </section>
+        )}
+
+        <a
+          className="project-repo-link scroll-lore-repo inline-flex w-fit items-center gap-2"
+          href={project.repoUrl ?? profileLinks.github}
+          target="_blank"
+          rel="noreferrer"
+        >
+          <Github size={14} />
+          {project.repoUrl ? 'OPEN GITHUB REPOSITORY' : 'BROWSE GITHUB PROFILE'}
+        </a>
+      </div>
+    </motion.div>
+  );
+}
+
 function ProjectPanel({
   selectedProject,
   onProjectChange,
@@ -857,130 +929,151 @@ function ProjectPanel({
   const prefersReducedMotion = useReducedMotion();
   const inkInitial = prefersReducedMotion ? { opacity: 0 } : inkBleedInitial;
   const inkAnimate = prefersReducedMotion ? { opacity: 1 } : inkBleedAnimate;
+  const [isScrollOpen, setIsScrollOpen] = useState(false);
+  const [scrollSession, setScrollSession] = useState(0);
+
+  useEffect(() => {
+    if (isScrollOpen) setScrollSession((current) => current + 1);
+  }, [isScrollOpen]);
+
+  useEffect(() => {
+    setIsScrollOpen(false);
+  }, [selectedProject]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key.toLowerCase() !== 'y') return;
+
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      setIsScrollOpen((prev) => !prev);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   return (
-    <div className="content-panel project-panel flex min-h-0 flex-col overflow-hidden">
+    <div className="content-panel project-panel flex h-full flex-col overflow-hidden">
       <div className="panel-topline shrink-0">
         <span>ITEM INSPECT / PROJECT {project.index}</span>
         <span className="status-dot"><CircleDot size={12} /> READY</span>
       </div>
 
-      <section
-        className="mt-4 min-h-0 flex-1 overflow-y-auto py-4 pr-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-        aria-label={`Inspecting ${project.title}`}
-      >
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={project.index}
-            className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,135px)_1fr] lg:items-start lg:gap-8"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.35, ease: 'easeOut' }}
-          >
+      <div className="flex h-full flex-col">
+        <section
+          className="shrink-0 pb-6 pr-4 pt-4"
+          aria-label={`Inspecting ${project.title}`}
+        >
+          <AnimatePresence mode="wait">
             <motion.div
-              className="item-emblem shrink-0"
-              initial={inkInitial}
-              animate={inkAnimate}
-              transition={inkBleedTransition}
+              key={project.index}
+              className="flex shrink-0 flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,8rem)_1fr] lg:items-start lg:gap-8"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.35, ease: 'easeOut' }}
             >
-              <div className="combat-art-frame">
-                <img src={combatArtSrc} alt="" />
-                <span>{project.index}</span>
-              </div>
-              <span>COMBAT ART</span>
-            </motion.div>
-
-            <motion.div
-              className="flex min-w-0 flex-col gap-6 py-4 pr-4"
-              initial={inkInitial}
-              animate={inkAnimate}
-              transition={{ ...inkBleedTransition, delay: prefersReducedMotion ? 0 : 0.1 }}
-            >
-              <div className="flex flex-col gap-6">
-                <div className="space-y-2">
-                  <span className="item-type">{project.type} / {project.year}</span>
-                  <h2 className="item-copy-title">{project.title}</h2>
+              <motion.div
+                className="item-emblem shrink-0"
+                initial={inkInitial}
+                animate={inkAnimate}
+                transition={inkBleedTransition}
+              >
+                <div className="flex h-32 w-32 items-center justify-center border border-[#4a3b2c] bg-[#141210] shadow-[inset_0_0_20px_rgba(0,0,0,0.8)]">
+                  <span className="font-serif text-6xl text-[#b8976a] drop-shadow-lg shadow-amber-900/50">{project.kanji}</span>
                 </div>
+              </motion.div>
 
-                <p className="text-wrap break-words font-[family-name:var(--app-font-mono)] text-[10px] leading-relaxed text-[#aba190]">
+              <motion.div
+                className="flex flex-col gap-1"
+                initial={inkInitial}
+                animate={inkAnimate}
+                transition={{ ...inkBleedTransition, delay: prefersReducedMotion ? 0 : 0.1 }}
+              >
+                <span className="item-type">{project.type} / {project.year}</span>
+                <h2 className="item-copy-title leading-tight">{project.title}</h2>
+                <p className="h-[48px] min-h-[3rem] text-wrap break-words font-[family-name:var(--app-font-mono)] text-[10px] leading-relaxed text-[#aba190] line-clamp-2">
                   {project.description}
                 </p>
 
-                <div className="metric-line">
-                  <span>ATTRIBUTE</span>
-                  <b>{project.metric}</b>
-                </div>
-
-                <div className="flex flex-wrap gap-2" aria-label="Tech stack">
-                  {project.stack.map((tech) => (
-                    <span
-                      key={tech}
-                      className="rounded-md border border-[rgba(192,176,143,0.2)] bg-[#1c1b19] px-2 py-1 font-[family-name:var(--app-font-mono)] text-[10px] tracking-wide text-[#9e9585]"
-                    >
-                      {tech}
-                    </span>
-                  ))}
-                </div>
-
-                {project.detail && (
-                  <p className="text-wrap break-words rounded-sm border-l-2 border-[var(--amber)] bg-[#1c1b19] px-3 py-3 font-[family-name:var(--app-font-mono)] text-[10px] leading-relaxed text-[#9e9585]">
-                    {project.detail}
-                  </p>
-                )}
-              </div>
-
-              <a
-                className="project-repo-link inline-flex w-fit items-center gap-2"
-                href={project.repoUrl ?? profileLinks.github}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <Github size={14} />
-                {project.repoUrl ? 'OPEN GITHUB REPOSITORY' : 'BROWSE GITHUB PROFILE'}
-              </a>
+                <button
+                  type="button"
+                  className="mt-4 flex w-fit shrink-0 cursor-pointer items-center gap-3 text-sm text-[#a3907c] uppercase tracking-widest transition-colors hover:text-[#e8d4b4]"
+                  onClick={() => setIsScrollOpen((prev) => !prev)}
+                >
+                  <span className="flex h-6 min-w-6 items-center justify-center rounded border border-[#4a3b2c] bg-[#141210] px-2 text-xs leading-none">Y</span>
+                  Read Scroll
+                </button>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        </AnimatePresence>
-      </section>
+          </AnimatePresence>
+        </section>
 
-      <nav
-        className="mt-6 shrink-0 border-t border-[rgba(190,176,148,0.16)] pt-4"
-        aria-label="Project inventory"
-      >
-        {projects.map((entry, index) => {
-          const isSelected = index === selectedProject;
-          return (
-            <button
-              type="button"
-              key={entry.index}
-              onClick={() => onProjectChange(index)}
-              aria-label={`Inspect ${entry.title}`}
-              aria-current={isSelected ? 'true' : undefined}
-              data-testid={`button-project-${index + 1}`}
-              className={[
-                'group flex w-full items-center justify-between rounded-sm border border-transparent px-3 py-2.5 text-left transition-all duration-300 ease-out',
-                'text-[#6e6659] hover:translate-x-2 hover:border-amber-500/20 hover:bg-amber-500/10 hover:text-[#f0e4c8]',
-                isSelected
-                  ? 'translate-x-1 border-amber-500/35 bg-amber-500/12 text-[#f5e6c4]'
-                  : '',
-              ].join(' ')}
-            >
-              <span className="truncate font-[family-name:var(--app-font-mono)] text-[10px] tracking-[0.08em] uppercase">
-                {entry.title}
-              </span>
-              <span
-                className={[
-                  'ml-3 shrink-0 font-[family-name:var(--app-font-mono)] text-[8px] tracking-widest transition-colors duration-300',
-                  isSelected ? 'text-amber-300/90' : 'text-[#8a7f6e] group-hover:text-amber-400/90',
-                ].join(' ')}
-              >
-                {entry.year}
-              </span>
-            </button>
-          );
-        })}
-      </nav>
+        <div className="custom-scroll min-h-0 flex-1 overflow-x-hidden overflow-y-auto border-t border-[rgba(190,176,148,0.16)] pt-4 pr-1">
+          <nav aria-label="Project inventory">
+            {projects.map((entry, index) => {
+              const isSelected = index === selectedProject;
+              return (
+                <button
+                  type="button"
+                  key={entry.index}
+                  onClick={() => onProjectChange(index)}
+                  aria-label={`Inspect ${entry.title}`}
+                  aria-current={isSelected ? 'true' : undefined}
+                  data-testid={`button-project-${index + 1}`}
+                  className={[
+                    'group flex w-full min-w-0 items-center justify-between rounded-sm border border-transparent px-3 py-2.5 text-left transition-all duration-300 ease-out',
+                    'text-[#6e6659] hover:border-amber-500/20 hover:bg-amber-500/10 hover:text-[#f0e4c8]',
+                    isSelected
+                      ? 'border-amber-500/35 bg-amber-500/12 text-[#f5e6c4]'
+                      : '',
+                  ].join(' ')}
+                >
+                  <span className="min-w-0 truncate font-[family-name:var(--app-font-mono)] text-[10px] tracking-[0.08em] uppercase">
+                    {entry.title}
+                  </span>
+                  <span
+                    className={[
+                      'ml-3 shrink-0 font-[family-name:var(--app-font-mono)] text-[8px] tracking-widest transition-colors duration-300',
+                      isSelected ? 'text-amber-300/90' : 'text-[#8a7f6e] group-hover:text-amber-400/90',
+                    ].join(' ')}
+                  >
+                    {entry.year}
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {isScrollOpen && (
+          <ParchmentScroll
+            key={`project-lore-scroll-${scrollSession}`}
+            ariaLabel={`${project.title} lore scroll`}
+            parchmentHeight={PARCHMENT_HEIGHT_LORE}
+            rodOffset={ROD_OFFSET_LORE}
+            assemblyMode="lore"
+            contentMode="lore"
+            topSealLabel="Roll up scroll"
+            bottomSealLabel="Seal & return to inspect"
+            onClose={() => setIsScrollOpen(false)}
+          >
+            <ProjectLoreScrollContent project={project} />
+          </ParchmentScroll>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -2117,7 +2117,8 @@ kbd {
   height: 642px;
 }
 
-.scroll-assembly-vertical.is-chapter-mode {
+.scroll-assembly-vertical.is-chapter-mode,
+.scroll-assembly-vertical.is-lore-mode {
   height: min(82vh, 782px);
 }
 
@@ -2228,10 +2229,32 @@ kbd {
   padding: 14px 24px 16px;
 }
 
-.ancient-scroll-inner.is-chapter-mode {
+.ancient-scroll-inner.is-chapter-mode,
+.ancient-scroll-inner.is-lore-mode {
   gap: 12px;
   min-height: 0;
   padding: 14px 22px 16px;
+}
+
+.scroll-lore-stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.scroll-lore-chip {
+  padding: 6px 10px;
+  color: #9e9585;
+  font-family: var(--app-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  background: rgba(20, 18, 16, 0.85);
+  border: 1px solid rgba(192, 176, 143, 0.2);
+  border-radius: 4px;
+}
+
+.scroll-lore-repo {
+  margin-top: 20px;
 }
 
 .ancient-scroll-content {
@@ -2265,7 +2288,11 @@ kbd {
 .scroll-wax-seal:hover,
 .scroll-wax-seal:focus-visible {
   transform: translateY(-1px) scale(1.03);
-  filter: brightness(1.08);
+}
+
+.scroll-wax-seal:hover .scroll-wax-seal-label,
+.scroll-wax-seal:focus-visible .scroll-wax-seal-label {
+  color: #e8d4b4;
 }
 
 .scroll-wax-seal-face {
@@ -2274,17 +2301,17 @@ kbd {
   width: 58px;
   height: 58px;
   border-radius: 999px;
-  background:
-    radial-gradient(circle at 30% 28%, #b32020, #8b0000 46%, #4a0000 100%);
-  border: 2px solid rgba(90, 0, 0, 0.75);
+  background: #141210;
+  border: 2px solid #8c6d48;
   box-shadow:
-    inset 0 2px 4px rgba(255, 120, 90, 0.22),
-    inset 0 -3px 6px rgba(30, 0, 0, 0.55),
+    inset 0 2px 4px rgba(184, 151, 106, 0.12),
+    inset 0 -3px 6px rgba(0, 0, 0, 0.55),
+    0 0 15px rgba(184, 151, 106, 0.2),
     0 8px 20px rgba(0, 0, 0, 0.42);
 }
 
 .scroll-wax-seal-mark {
-  color: rgba(255, 220, 200, 0.94);
+  color: #b8976a;
   font-family: var(--app-font-serif);
   font-size: 14px;
   line-height: 1;
@@ -2513,7 +2540,8 @@ kbd {
     height: min(620px, 88vh);
   }
 
-  .scroll-assembly-vertical.is-chapter-mode {
+  .scroll-assembly-vertical.is-chapter-mode,
+  .scroll-assembly-vertical.is-lore-mode {
     height: min(78vh, 720px);
   }
 

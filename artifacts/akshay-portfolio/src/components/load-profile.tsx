@@ -1,12 +1,176 @@
+import { type ReactNode } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getSaveChapter, saveChapters, type SaveChapter } from '@/data/save-chapters';
 
-const PARCHMENT_HEIGHT_SAVE = '600px';
-const PARCHMENT_HEIGHT_CHAPTER = 'min(72vh, 760px)';
-const ROD_OFFSET_SAVE = '310px';
-const ROD_OFFSET_CHAPTER = 'calc(min(36vh, 380px) + 10px)';
+export const PARCHMENT_HEIGHT_SAVE = '600px';
+export const PARCHMENT_HEIGHT_CHAPTER = 'min(72vh, 760px)';
+export const PARCHMENT_HEIGHT_LORE = 'min(68vh, 720px)';
+export const ROD_OFFSET_SAVE = '310px';
+export const ROD_OFFSET_CHAPTER = 'calc(min(36vh, 380px) + 10px)';
+export const ROD_OFFSET_LORE = 'calc(min(34vh, 360px) + 10px)';
 const ROLL_DURATION = 0.88;
+
+type ParchmentScrollProps = {
+  ariaLabel: string;
+  children: ReactNode;
+  parchmentHeight: string;
+  rodOffset: string;
+  assemblyMode: 'save' | 'chapter' | 'lore';
+  contentMode: 'save-list' | 'chapter' | 'lore';
+  topSealLabel: string;
+  bottomSealLabel: string;
+  onClose: () => void;
+  onSealReunfurl?: () => void;
+};
+
+export function ParchmentScroll({
+  ariaLabel,
+  children,
+  parchmentHeight,
+  rodOffset,
+  assemblyMode,
+  contentMode,
+  topSealLabel,
+  bottomSealLabel,
+  onClose,
+  onSealReunfurl,
+}: ParchmentScrollProps) {
+  const prefersReducedMotion = useReducedMotion();
+  const [isUnfurled, setIsUnfurled] = useState(false);
+  const rollTimeoutRef = useRef<number | null>(null);
+  const reunfurlTimeoutRef = useRef<number | null>(null);
+
+  const clearRollTimers = useCallback(() => {
+    if (rollTimeoutRef.current !== null) {
+      window.clearTimeout(rollTimeoutRef.current);
+      rollTimeoutRef.current = null;
+    }
+    if (reunfurlTimeoutRef.current !== null) {
+      window.clearTimeout(reunfurlTimeoutRef.current);
+      reunfurlTimeoutRef.current = null;
+    }
+  }, []);
+
+  const triggerUnfurl = useCallback(() => {
+    if (prefersReducedMotion) {
+      setIsUnfurled(true);
+      return;
+    }
+
+    setIsUnfurled(false);
+    reunfurlTimeoutRef.current = window.setTimeout(() => {
+      reunfurlTimeoutRef.current = null;
+      window.requestAnimationFrame(() => setIsUnfurled(true));
+    }, 32);
+  }, [prefersReducedMotion]);
+
+  useEffect(() => {
+    triggerUnfurl();
+    return clearRollTimers;
+  }, [clearRollTimers, triggerUnfurl]);
+
+  const rollUp = useCallback(
+    (onComplete: () => void) => {
+      clearRollTimers();
+
+      if (prefersReducedMotion) {
+        onComplete();
+        return;
+      }
+
+      setIsUnfurled(false);
+      rollTimeoutRef.current = window.setTimeout(() => {
+        rollTimeoutRef.current = null;
+        onComplete();
+      }, ROLL_DURATION * 1000);
+    },
+    [clearRollTimers, prefersReducedMotion],
+  );
+
+  const handleSeal = () => {
+    if (onSealReunfurl) {
+      rollUp(() => {
+        onSealReunfurl();
+        triggerUnfurl();
+      });
+      return;
+    }
+
+    rollUp(onClose);
+  };
+
+  const handleDismiss = () => {
+    rollUp(onClose);
+  };
+
+  const rollTransition = prefersReducedMotion
+    ? { duration: 0.2 }
+    : { duration: ROLL_DURATION, ease: [0.22, 1, 0.36, 1] as const };
+
+  const contentClassName =
+    contentMode === 'save-list'
+      ? 'ancient-scroll-content is-save-list overflow-hidden'
+      : contentMode === 'chapter'
+        ? 'ancient-scroll-content is-chapter overflow-hidden'
+        : 'ancient-scroll-content is-chapter is-lore overflow-hidden';
+
+  return (
+    <motion.div
+      className="scroll-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/80"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.35 }}
+      onClick={handleDismiss}
+      role="dialog"
+      aria-modal="true"
+      aria-label={ariaLabel}
+    >
+      <div
+        className={`scroll-assembly-vertical mx-auto w-[90%] max-w-[750px] is-${assemblyMode}-mode`}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <motion.div
+          className="scroll-rod-h-wrap scroll-rod-h-wrap-top"
+          initial={{ y: 0 }}
+          animate={{ y: isUnfurled ? `calc(-1 * ${rodOffset})` : 0 }}
+          transition={rollTransition}
+        >
+          <HorizontalRod position="top" />
+        </motion.div>
+
+        <motion.article
+          className="ancient-scroll-parchment"
+          initial={{ height: 0, opacity: 0 }}
+          animate={{
+            height: isUnfurled ? parchmentHeight : 0,
+            opacity: isUnfurled ? 1 : 0,
+          }}
+          transition={rollTransition}
+          style={{ pointerEvents: isUnfurled ? 'auto' : 'none' }}
+        >
+          <div className={`ancient-scroll-inner flex flex-col items-center is-${assemblyMode}-mode`}>
+            <WaxSealButton label={topSealLabel} onClick={handleSeal} />
+
+            <div className={contentClassName}>{children}</div>
+
+            <WaxSealButton label={bottomSealLabel} onClick={handleSeal} />
+          </div>
+        </motion.article>
+
+        <motion.div
+          className="scroll-rod-h-wrap scroll-rod-h-wrap-bottom"
+          initial={{ y: 0 }}
+          animate={{ y: isUnfurled ? rodOffset : 0 }}
+          transition={rollTransition}
+        >
+          <HorizontalRod position="bottom" />
+        </motion.div>
+      </div>
+    </motion.div>
+  );
+}
 
 type LoadProfileExperienceProps = {
   isOpenSaveMenu: boolean;
@@ -173,167 +337,37 @@ function AncientScroll({
   onReturnToSaveList: () => void;
   onCloseSaveMenu: () => void;
 }) {
-  const prefersReducedMotion = useReducedMotion();
-  const [isUnfurled, setIsUnfurled] = useState(false);
-  const rollTimeoutRef = useRef<number | null>(null);
-  const reunfurlTimeoutRef = useRef<number | null>(null);
-
-  const clearRollTimers = useCallback(() => {
-    if (rollTimeoutRef.current !== null) {
-      window.clearTimeout(rollTimeoutRef.current);
-      rollTimeoutRef.current = null;
-    }
-    if (reunfurlTimeoutRef.current !== null) {
-      window.clearTimeout(reunfurlTimeoutRef.current);
-      reunfurlTimeoutRef.current = null;
-    }
-  }, []);
-
-  const triggerUnfurl = useCallback(() => {
-    if (prefersReducedMotion) {
-      setIsUnfurled(true);
-      return;
-    }
-
-    setIsUnfurled(false);
-    reunfurlTimeoutRef.current = window.setTimeout(() => {
-      reunfurlTimeoutRef.current = null;
-      window.requestAnimationFrame(() => setIsUnfurled(true));
-    }, 32);
-  }, [prefersReducedMotion]);
-
-  useEffect(() => {
-    triggerUnfurl();
-    return clearRollTimers;
-  }, [clearRollTimers, triggerUnfurl]);
-
-  const rollUp = useCallback(
-    (onComplete: () => void) => {
-      clearRollTimers();
-
-      if (prefersReducedMotion) {
-        onComplete();
-        return;
-      }
-
-      setIsUnfurled(false);
-      rollTimeoutRef.current = window.setTimeout(() => {
-        rollTimeoutRef.current = null;
-        onComplete();
-      }, ROLL_DURATION * 1000);
-    },
-    [clearRollTimers, prefersReducedMotion],
-  );
-
-  const handleSeal = () => {
-    if (chapter) {
-      rollUp(() => {
-        onReturnToSaveList();
-        triggerUnfurl();
-      });
-      return;
-    }
-
-    rollUp(onCloseSaveMenu);
-  };
-
-  const handleDismiss = () => {
-    rollUp(onCloseSaveMenu);
-  };
-
-  const rollTransition = prefersReducedMotion
-    ? { duration: 0.2 }
-    : { duration: ROLL_DURATION, ease: [0.22, 1, 0.36, 1] as const };
-
   const parchmentHeight = chapter ? PARCHMENT_HEIGHT_CHAPTER : PARCHMENT_HEIGHT_SAVE;
   const rodOffset = chapter ? ROD_OFFSET_CHAPTER : ROD_OFFSET_SAVE;
 
   return (
-    <motion.div
-      className="scroll-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/80"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.35 }}
-      onClick={handleDismiss}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Load profile scroll"
+    <ParchmentScroll
+      ariaLabel="Load profile scroll"
+      parchmentHeight={parchmentHeight}
+      rodOffset={rodOffset}
+      assemblyMode={chapter ? 'chapter' : 'save'}
+      contentMode={chapter ? 'chapter' : 'save-list'}
+      topSealLabel={chapter ? 'Roll up chapter' : 'Roll up scroll'}
+      bottomSealLabel={chapter ? 'Seal & return to saves' : 'Seal & return to menu'}
+      onClose={onCloseSaveMenu}
+      onSealReunfurl={chapter ? onReturnToSaveList : undefined}
     >
-      <div
-        className={`scroll-assembly-vertical mx-auto w-[90%] max-w-[750px] ${chapter ? 'is-chapter-mode' : 'is-save-mode'}`}
-        onClick={(event) => event.stopPropagation()}
-      >
-        <motion.div
-          className="scroll-rod-h-wrap scroll-rod-h-wrap-top"
-          initial={{ y: 0 }}
-          animate={{ y: isUnfurled ? `calc(-1 * ${rodOffset})` : 0 }}
-          transition={rollTransition}
-        >
-          <HorizontalRod position="top" />
-        </motion.div>
-
-        <motion.article
-          className="ancient-scroll-parchment"
-          initial={{ height: 0, opacity: 0 }}
-          animate={{
-            height: isUnfurled ? parchmentHeight : 0,
-            opacity: isUnfurled ? 1 : 0,
-          }}
-          transition={rollTransition}
-          style={{ pointerEvents: isUnfurled ? 'auto' : 'none' }}
-        >
-          <div
-            className={`ancient-scroll-inner flex flex-col items-center ${
-              chapter ? 'is-chapter-mode' : 'is-save-mode'
-            }`}
+      <AnimatePresence mode="wait">
+        {chapter ? (
+          <ChapterDetails key={chapter.id} chapter={chapter} />
+        ) : (
+          <motion.div
+            key="save-list"
+            className="scroll-save-list-wrap"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
           >
-            <WaxSealButton
-              label={chapter ? 'Roll up chapter' : 'Roll up scroll'}
-              onClick={handleSeal}
-            />
-
-            <div
-              className={
-                chapter
-                  ? 'ancient-scroll-content is-chapter overflow-hidden'
-                  : 'ancient-scroll-content is-save-list overflow-hidden'
-              }
-            >
-              <AnimatePresence mode="wait">
-                {chapter ? (
-                  <ChapterDetails key={chapter.id} chapter={chapter} />
-                ) : (
-                  <motion.div
-                    key="save-list"
-                    className="scroll-save-list-wrap"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <SaveSlotList onSelect={onSelectSave} />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            <WaxSealButton
-              label={chapter ? 'Seal & return to saves' : 'Seal & return to menu'}
-              onClick={handleSeal}
-            />
-          </div>
-        </motion.article>
-
-        <motion.div
-          className="scroll-rod-h-wrap scroll-rod-h-wrap-bottom"
-          initial={{ y: 0 }}
-          animate={{ y: isUnfurled ? rodOffset : 0 }}
-          transition={rollTransition}
-        >
-          <HorizontalRod position="bottom" />
-        </motion.div>
-      </div>
-    </motion.div>
+            <SaveSlotList onSelect={onSelectSave} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </ParchmentScroll>
   );
 }
