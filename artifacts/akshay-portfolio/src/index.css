@@ -2047,6 +2047,257 @@ kbd {
   line-height: 1.7;
 }
 
+.save-file-backdrop,
+.parchment-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(4, 4, 3, 0.84);
+  backdrop-filter: blur(3px);
+}
+
+.save-file-menu {
+  width: min(560px, 100%);
+  padding: 24px;
+  background: linear-gradient(180deg, rgba(28, 26, 23, 0.98), rgba(18, 17, 15, 0.98));
+  border: 1px solid rgba(190, 176, 148, 0.28);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(213, 155, 88, 0.08);
+}
+
+.save-file-menu-header {
+  margin-bottom: 8px;
+}
+
+.save-file-menu-lead {
+  margin: 0 0 18px;
+  color: #a49b8b;
+  font-family: var(--app-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  line-height: 1.6;
+}
+
+.save-file-slots {
+  display: grid;
+  gap: 10px;
+}
+
+.save-file-slot {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 14px;
+  align-items: center;
+  width: 100%;
+  padding: 14px 16px;
+  text-align: left;
+  background: rgba(12, 11, 10, 0.72);
+  border: 1px solid rgba(190, 176, 148, 0.16);
+  color: #d8cdb8;
+  transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
+}
+
+.save-file-slot:hover,
+.save-file-slot:focus-visible {
+  border-color: rgba(213, 155, 88, 0.45);
+  background: rgba(213, 155, 88, 0.08);
+  transform: translateX(4px);
+}
+
+.save-file-slot-index {
+  color: var(--amber-bright);
+  font-family: var(--app-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+}
+
+.save-file-slot-title {
+  display: block;
+  font-family: var(--app-font-serif);
+  font-size: clamp(18px, 2.4vw, 24px);
+  font-weight: 600;
+  line-height: 1;
+  color: var(--paper-bright);
+}
+
+.save-file-slot-meta {
+  display: block;
+  margin-top: 6px;
+  color: #8f8678;
+  font-family: var(--app-font-mono);
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.save-file-slot-arrow {
+  color: var(--amber-pale);
+  font-size: 18px;
+}
+
+.parchment-scroll {
+  position: relative;
+  width: min(760px, 100%);
+  max-height: min(86vh, 920px);
+  overflow: hidden;
+  background: #1f1b16;
+  border: 1px solid rgba(122, 101, 68, 0.45);
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 236, 198, 0.04);
+}
+
+.parchment-scroll-edge {
+  height: 14px;
+  background: linear-gradient(90deg, #4a3d2d, #7a6544 18%, #b89563 50%, #7a6544 82%, #4a3d2d);
+}
+
+.parchment-scroll-edge-bottom {
+  transform: scaleY(-1);
+}
+
+.parchment-scroll-body {
+  max-height: calc(min(86vh, 920px) - 28px);
+  overflow-y: auto;
+  padding: 28px 30px 32px;
+  background:
+    linear-gradient(180deg, rgba(255, 244, 220, 0.04), transparent 12%),
+    radial-gradient(circle at top, rgba(213, 155, 88, 0.08), transparent 55%),
+    #2a241d;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(190, 176, 148, 0.35) transparent;
+}
+
+.parchment-scroll-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.parchment-scroll-kicker {
+  color: var(--amber-bright);
+  font-family: var(--app-font-mono);
+  font-size: 8px;
+  letter-spacing: 0.16em;
+}
+
+.parchment-scroll-title {
+  margin: 8px 0 0;
+  color: #f4ead4;
+  font-family: var(--app-font-serif);
+  font-size: clamp(28px, 4vw, 42px);
+  font-weight: 600;
+  line-height: 0.95;
+}
+
+.parchment-scroll-year {
+  margin: 8px 0 0;
+  color: #9f9585;
+  font-family: var(--app-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+}
+
+.parchment-scroll-summary,
+.parchment-scroll-background {
+  margin: 0 0 14px;
+  color: #c8bba4;
+  font-family: var(--app-font-mono);
+  font-size: 10px;
+  line-height: 1.7;
+}
+
+.parchment-scroll-section {
+  margin-top: 22px;
+}
+
+.parchment-scroll-section h3 {
+  margin: 0 0 12px;
+  color: var(--amber-pale);
+  font-family: var(--app-font-mono);
+  font-size: 8px;
+  letter-spacing: 0.18em;
+}
+
+.parchment-timeline,
+.parchment-projects {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.parchment-timeline li,
+.parchment-projects li {
+  padding: 12px 14px;
+  background: rgba(10, 9, 8, 0.42);
+  border-left: 2px solid rgba(213, 155, 88, 0.55);
+}
+
+.parchment-timeline span,
+.parchment-project-head span {
+  display: block;
+  color: #8f8678;
+  font-family: var(--app-font-mono);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.parchment-timeline strong,
+.parchment-project-head strong {
+  display: block;
+  margin-top: 6px;
+  color: #f0e4c8;
+  font-family: var(--app-font-serif);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.parchment-timeline p,
+.parchment-projects p {
+  margin: 8px 0 0;
+  color: #b0a593;
+  font-family: var(--app-font-mono);
+  font-size: 9px;
+  line-height: 1.6;
+}
+
+.parchment-project-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.parchment-seal-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(12, 11, 10, 0.8);
+  border: 1px solid rgba(213, 155, 88, 0.35);
+  color: #f0e4c8;
+  font-family: var(--app-font-mono);
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  transition: border-color 180ms ease, background 180ms ease;
+}
+
+.parchment-seal-button:hover,
+.parchment-seal-button:focus-visible {
+  border-color: rgba(213, 155, 88, 0.7);
+  background: rgba(213, 155, 88, 0.1);
+}
+
+.parchment-seal-button-bottom {
+  margin-top: 24px;
+}
+
 @media (max-width: 800px) {
   .title-meta {
     top: 19px;

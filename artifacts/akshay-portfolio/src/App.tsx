@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AnimatePresence, motion, useReducedMotion, useScroll, useSpring } from 'framer-motion';
 import {
@@ -20,6 +20,9 @@ import {
 import Atmosphere from '@/components/Atmosphere';
 import { BladeButton } from '@/components/blade-button';
 import { EquipmentPanel } from '@/components/equipment';
+import { AssetWarmup } from '@/components/asset-warmup';
+import { LoadProfileExperience } from '@/components/load-profile';
+import { LoadingScreen } from '@/components/loading-screen';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -161,107 +164,6 @@ function Crest({ small = false }: { small?: boolean }) {
     <div className={`crest ${small ? 'crest-small' : ''}`} aria-label="AS monogram crest">
       <span>AS</span>
     </div>
-  );
-}
-
-function Particles({ count = 28 }: { count?: number }) {
-  const particles = useMemo(
-    () =>
-      Array.from({ length: count }, (_, index) => ({
-        left: `${(index * 37 + 4) % 100}%`,
-        top: `${(index * 61 + 7) % 100}%`,
-        size: 1 + (index % 3),
-        delay: `${(index % 8) * 0.72}s`,
-        duration: `${6 + (index % 5)}s`,
-      })),
-    [count],
-  );
-
-  return (
-    <div className="particles" aria-hidden="true">
-      {particles.map((particle, index) => (
-        <span
-          className="particle"
-          key={`particle-${index}`}
-          style={{
-            left: particle.left,
-            top: particle.top,
-            width: particle.size,
-            height: particle.size,
-            animationDelay: particle.delay,
-            animationDuration: particle.duration,
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
-function LoadingScreen({ onComplete }: { onComplete: () => void }) {
-  const [progress, setProgress] = useState(4);
-  const [isStriking, setIsStriking] = useState(false);
-  const strikingRef = useRef(false);
-
-  useEffect(() => {
-    let mounted = true;
-    let ready = false;
-    let minimumReached = false;
-    const completionTimers: number[] = [];
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const progressTimer = window.setInterval(() => setProgress((current) => Math.min(current + 8, 94)), reducedMotion ? 100 : 72);
-    const startStrike = () => {
-      if (!mounted || strikingRef.current) return;
-      strikingRef.current = true;
-      setIsStriking(true);
-      completionTimers.push(window.setTimeout(() => mounted && setProgress(100), 260));
-      // The clip-path exit begins while the blade is finishing its travel, making one continuous cut.
-      completionTimers.push(window.setTimeout(() => mounted && onComplete(), 430));
-    };
-    const minimumTimer = window.setTimeout(() => {
-      minimumReached = true;
-      if (ready) startStrike();
-    }, reducedMotion ? 80 : 1260);
-    const fallbackTimer = window.setTimeout(startStrike, reducedMotion ? 500 : 1900);
-    const criticalImage = new Image();
-    criticalImage.src = combatArtSrc;
-    const imageReady = criticalImage.decode ? criticalImage.decode().catch(() => undefined) : Promise.resolve();
-    Promise.allSettled([document.fonts?.ready ?? Promise.resolve(), imageReady]).then(() => {
-      if (!mounted) return;
-      ready = true;
-      if (minimumReached) startStrike();
-    });
-    return () => {
-      mounted = false;
-      window.clearInterval(progressTimer);
-      window.clearTimeout(minimumTimer);
-      window.clearTimeout(fallbackTimer);
-      completionTimers.forEach((timer) => window.clearTimeout(timer));
-    };
-  }, [onComplete]);
-
-  return (
-    <motion.div
-      className={`loading-screen fixed inset-0 z-[100] ${isStriking ? 'is-striking' : ''}`}
-      initial={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.42, ease: [0.23, 1, 0.32, 1] }}
-      aria-label="Loading portfolio"
-    >
-      <Particles count={24} />
-      <div className="loading-vignette" />
-      <div className="loading-ash" aria-hidden="true" />
-      <div className="loading-mark">
-        <div className="loading-kanji">忍</div>
-        <div className="loading-name">AKSHAY SURESH</div>
-        <div className="loading-subtitle">SHINOBI / DEVELOPER</div>
-      </div>
-      <div className="loading-glare" aria-hidden="true" />
-      <div className="loading-progress">
-        <div className="loading-progress-label"><span>INITIALIZING ARCHIVE</span><span>{String(progress).padStart(2, '0')}%</span></div>
-        <div className="loading-track"><motion.div className="loading-fill" initial={{ scaleX: 0.04 }} animate={{ scaleX: progress / 100 }} transition={{ duration: 0.12, ease: 'linear' }} /></div>
-      </div>
-
-    </motion.div>
   );
 }
 
@@ -807,14 +709,24 @@ function FruitArcade() {
 
 function TitleScreen({ onContinue, onOptions }: { onContinue: () => void; onOptions: () => void }) {
   const [selected, setSelected] = useState(0);
+  const [isOpenSaveMenu, setIsOpenSaveMenu] = useState(false);
+  const [selectedSaveFile, setSelectedSaveFile] = useState<string | null>(null);
   const titleActions = [
     { label: 'CONTINUE', hint: 'ENTER THE ARCHIVE' },
     { label: 'LOAD PROFILE', hint: 'REVIEW THE RECORD' },
     { label: 'SETTINGS', hint: 'INTERFACE OPTIONS' },
   ];
 
+  const activateAction = useCallback((index: number) => {
+    if (index === 0) onContinue();
+    else if (index === 1) setIsOpenSaveMenu(true);
+    else onOptions();
+  }, [onContinue, onOptions]);
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (isOpenSaveMenu || selectedSaveFile) return;
+
       if (event.key === 'ArrowDown' || event.key.toLowerCase() === 's') {
         event.preventDefault();
         setSelected((current) => (current + 1) % titleActions.length);
@@ -824,13 +736,12 @@ function TitleScreen({ onContinue, onOptions }: { onContinue: () => void; onOpti
         setSelected((current) => (current - 1 + titleActions.length) % titleActions.length);
       }
       if (event.key === 'Enter') {
-        if (selected === 2) onOptions();
-        else onContinue();
+        activateAction(selected);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onContinue, onOptions, selected, titleActions.length]);
+  }, [activateAction, isOpenSaveMenu, selected, selectedSaveFile, titleActions.length]);
 
   return (
     <motion.main
@@ -860,8 +771,7 @@ function TitleScreen({ onContinue, onOptions }: { onContinue: () => void; onOpti
               key={action.label}
               onClick={() => {
                 setSelected(index);
-                if (index === 2) onOptions();
-                else onContinue();
+                activateAction(index);
               }}
             >
               <span>{action.label}</span>
@@ -871,6 +781,14 @@ function TitleScreen({ onContinue, onOptions }: { onContinue: () => void; onOpti
         </nav>
       </div>
       <div className="title-footer"><span><kbd>W</kbd><kbd>S</kbd> SELECT</span><span><kbd>ENTER</kbd> CONFIRM</span><span>© 2026 AKSHAY SURESH</span></div>
+
+      <LoadProfileExperience
+        isOpenSaveMenu={isOpenSaveMenu}
+        selectedSaveFile={selectedSaveFile}
+        onCloseSaveMenu={() => setIsOpenSaveMenu(false)}
+        onSelectSaveFile={setSelectedSaveFile}
+        onCloseScroll={() => setSelectedSaveFile(null)}
+      />
     </motion.main>
   );
 }
@@ -1440,6 +1358,7 @@ function Home() {
           )}
         </AnimatePresence>
       </div>
+      {!isLoading && <AssetWarmup />}
       <AnimatePresence>{isLoading && <LoadingScreen key="loading" onComplete={completeLoading} />}</AnimatePresence>
     </div>
   );
