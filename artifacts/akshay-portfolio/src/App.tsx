@@ -1084,15 +1084,27 @@ function AttributesPanel() {
   const visibleSkills = skillCategories[activeCategory];
 
   return (
-    <div className="content-panel attributes-panel">
-      <div className="panel-topline">
+    <div className="content-panel attributes-panel flex min-h-0 flex-col overflow-hidden">
+      <div className="panel-topline shrink-0">
         <span>CHARACTER STATUS / ATTRIBUTES</span>
         <span className="status-dot"><CircleDot size={12} /> ONLINE</span>
       </div>
-      <PanelTitle kicker="CURRENT LOADOUT" title="Skill" accent=" tree" />
-      <p className="panel-lead">The instruments I reach for when a problem needs to become a reliable experience.</p>
-      <div className="skill-tree-layout">
-        <nav className="skill-category-list" aria-label="Skill categories">
+
+      <div className="mb-4 shrink-0">
+        <div className="panel-kicker mb-2">CURRENT LOADOUT</div>
+        <h1 className="m-0 font-[family-name:var(--app-font-serif)] text-5xl font-medium leading-tight tracking-tight text-[var(--paper-bright)]">
+          Skill <span className="text-[var(--amber-bright)]">tree</span>
+        </h1>
+        <p className="mt-2 max-w-xl font-[family-name:var(--app-font-mono)] text-[10px] leading-snug text-[#a49b8b]">
+          The instruments I reach for when a problem needs to become a reliable experience.
+        </p>
+      </div>
+
+      <div className="flex min-h-0 flex-1 flex-row gap-8">
+        <nav
+          className="flex w-[220px] shrink-0 flex-col gap-4"
+          aria-label="Skill categories"
+        >
           {categories.map((category) => (
             <button
               className={`skill-category-button ${category === activeCategory ? 'is-selected' : ''}`}
@@ -1105,17 +1117,40 @@ function AttributesPanel() {
             </button>
           ))}
         </nav>
-        <div className="attribute-list">
-          {visibleSkills.map((attribute) => (
-            <div className="attribute-row" key={attribute.name}>
-              <div className="attribute-label"><span>{attribute.name}</span><small>{attribute.note}</small></div>
-              <div className="attribute-bar"><span style={{ width: `${attribute.value}%` }} /></div>
-              <b>{attribute.value}</b>
-            </div>
-          ))}
+
+        <div className="custom-scroll min-h-0 flex-1 overflow-y-auto pr-6">
+          <div className="attribute-list grid grid-cols-2 gap-x-12 gap-y-3">
+            {visibleSkills.map((attribute) => (
+              <div className="attribute-row min-w-0" key={attribute.name}>
+                <div className="flex flex-col">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-[family-name:var(--app-font-mono)] text-sm tracking-wide text-[#e8d4b4]">
+                      {attribute.name}
+                    </span>
+                    <small className="font-[family-name:var(--app-font-mono)] text-[10px] leading-snug text-[#a49b8b]">
+                      {attribute.note}
+                    </small>
+                  </div>
+
+                  <div className="mt-1 flex items-center gap-4">
+                    <div className="attribute-bar h-2 flex-1">
+                      <span style={{ width: `${attribute.value}%` }} />
+                    </div>
+                    <b className="shrink-0 font-[family-name:var(--app-font-mono)] text-sm font-normal text-[#d4b28c]">
+                      {attribute.value}
+                    </b>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-      <div className="panel-callout"><Sparkles size={18} /><span>ATTACK POWER <b>WEB / API / STATE</b></span></div>
+
+      <div className="panel-callout shrink-0">
+        <Sparkles size={18} />
+        <span>ATTACK POWER <b>WEB / API / STATE</b></span>
+      </div>
     </div>
   );
 }

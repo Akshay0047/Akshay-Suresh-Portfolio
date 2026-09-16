@@ -79,6 +79,34 @@
   }
 }
 
+/* ==========================================
+   SEKIRO SCROLLBAR (DARK FORGED STEEL)
+   ========================================== */
+::-webkit-scrollbar {
+  width: 4px; /* Much thinner, elegant blade */
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(15, 13, 12, 0.4); /* Very subtle track */
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    to right,
+    #1a1a1a 0%,    /* Dark iron spine */
+    #332b22 60%,   /* Mid-blade */
+    #b8976a 100%   /* Subtle amber/steel cutting edge */
+  );
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    to right,
+    #2a241d 0%,
+    #4a3b2c 50%,
+    #e8d4b4 100%   /* Brighter flash on hover */
+  );
+}
+
 .portfolio-app {
   position: relative;
   width: 100%;
@@ -618,6 +646,8 @@
 }
 
 .menu-button-index {
+  position: relative;
+  top: -10px;
   color: rgba(229, 198, 141, 0.7);
   font-size: 10px;
 }
@@ -2434,30 +2464,8 @@ kbd {
   flex-direction: column;
 }
 
-/* Custom Sekiro scrollbar — chapter detail view only */
 .custom-scroll {
   overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #7a5c38 rgba(15, 13, 11, 0.9);
-}
-
-.custom-scroll::-webkit-scrollbar {
-  width: 6px;
-}
-
-.custom-scroll::-webkit-scrollbar-track {
-  background: rgba(15, 13, 11, 0.9);
-  border-radius: 4px;
-}
-
-.custom-scroll::-webkit-scrollbar-thumb {
-  background: #7a5c38;
-  border: 1px solid #3a291b;
-  border-radius: 4px;
-}
-
-.custom-scroll::-webkit-scrollbar-thumb:hover {
-  background: #b8976a;
 }
 
 .scroll-chapter-summary,
@@ -2683,13 +2691,12 @@ kbd {
 }
 
 .attributes-panel .attribute-list {
-  justify-content: center;
-  gap: 14px;
+  justify-content: flex-start;
   max-width: none;
   min-height: 0;
   margin-top: 0;
-  padding-left: 3px;
-  border-left: 1px solid var(--amber);
+  padding-left: 0;
+  border-left: 0;
 }
 
 .options-actions {
@@ -2735,7 +2742,8 @@ kbd {
   }
 
   .attributes-panel .attribute-list {
-    gap: 10px;
+    grid-template-columns: 1fr;
+    gap: 16px;
     padding: 12px 0 0;
     border-top: 1px solid var(--amber);
     border-left: 0;
@@ -2844,21 +2852,7 @@ kbd {
   grid-column: 1 / -1;
 }
 
-.attributes-panel .attribute-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-content: start;
-  gap: 14px 24px;
-  max-width: none;
-  min-height: 0;
-  margin-top: 18px;
-  overflow: hidden;
-  padding-right: 6px;
-}
-
 .attributes-panel .attribute-row {
-  grid-template-columns: minmax(92px, 0.7fr) minmax(46px, 1fr) 27px;
-  gap: 10px;
   min-width: 0;
 }
 
@@ -2913,18 +2907,13 @@ kbd {
   }
 
   .attributes-panel .attribute-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     align-content: start;
-    gap: 10px 12px;
+    gap: 16px;
     margin-top: 17px;
     padding: 12px 0 0;
     border-top: 1px solid var(--amber);
     border-left: 0;
-  }
-
-  .attributes-panel .attribute-row {
-    grid-template-columns: minmax(70px, 0.95fr) minmax(24px, 1fr) 20px;
-    gap: 6px;
   }
 
   .memory-list {
@@ -2952,126 +2941,49 @@ kbd {
   z-index: 2;
 }
 
-.attributes-panel .panel-title {
-  margin-top: clamp(22px, 3.5vh, 34px);
-}
-
-.attributes-panel .panel-title h1 {
-  font-size: clamp(44px, 5vw, 72px);
-  line-height: 0.8;
-}
-
-.attributes-panel > .panel-lead {
-  max-width: 560px;
-  margin-top: 16px;
-  font-size: 10px;
-  line-height: 1.5;
-}
-
-.attributes-panel .skill-tree-layout {
-  grid-template-columns: minmax(160px, 0.34fr) minmax(0, 0.66fr);
-  gap: clamp(18px, 2.6vw, 34px);
-  flex: 1 1 auto;
-  min-height: 0;
-  margin-top: 22px;
-  overflow: hidden;
-}
-
-.attributes-panel .skill-category-list {
-  gap: 5px;
-}
-
 .attributes-panel .skill-category-button {
   min-height: 43px;
   padding: 0 15px;
 }
 
 .attributes-panel .skill-category-button span {
-  font-size: 15px;
+  font-size: 14px;
 }
 
 .attributes-panel .attribute-list {
-  gap: 10px 18px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 12px 48px;
+  max-width: none;
+  margin-top: 0;
+  overflow: visible;
+  padding-right: 0;
+  border-left: 0;
 }
 
 .attributes-panel .attribute-row {
-  grid-template-columns: minmax(100px, 0.8fr) minmax(72px, 1fr) 24px;
-  gap: 8px;
-}
-
-.attributes-panel .attribute-label {
-  gap: 2px;
-  font-size: 8px;
-  line-height: 1.1;
-}
-
-.attributes-panel .attribute-label small {
-  font-size: 6px;
-  line-height: 1.2;
+  min-width: 0;
 }
 
 .attributes-panel .attribute-bar {
-  height: 5px;
-}
-
-.attributes-panel .attribute-row > b {
-  font-size: 8px;
+  height: 8px;
 }
 
 .attributes-panel .panel-callout {
   padding-top: 14px;
 }
 
-@media (min-width: 801px) {
-  .attributes-panel .attribute-label > span {
-    white-space: nowrap;
-  }
-}
-
 @media (max-width: 800px) {
-  .attributes-panel .panel-title {
-    margin-top: 13px;
-  }
-
-  .attributes-panel .panel-title h1 {
-    font-size: clamp(38px, 11vw, 54px);
-  }
-
-  .attributes-panel > .panel-lead {
-    margin-top: 10px;
-    font-size: 8px;
-  }
-
-  .attributes-panel .skill-tree-layout {
-    margin-top: 13px;
-  }
-
   .attributes-panel .skill-category-button {
     min-height: 34px;
   }
 
   .attributes-panel .skill-category-button span {
-    font-size: 6px;
-  }
-
-  .attributes-panel .attribute-list {
-    gap: 7px 9px;
-  }
-
-  .attributes-panel .attribute-label {
-    font-size: 7px;
-  }
-
-  .attributes-panel .attribute-label small {
-    font-size: 5px;
+    font-size: 10px;
   }
 }
 
-.attributes-panel .attribute-list {
-  gap: 12px 22px;
-  overflow: hidden;
-  padding-right: 0;
-}
 
 @media (max-width: 800px) {
   .game-body::before {
@@ -3079,9 +2991,8 @@ kbd {
   }
 
   .attributes-panel .attribute-list {
-    gap: 8px 10px;
+    gap: 14px;
     min-height: 0;
-    overflow: hidden;
     padding-right: 0;
   }
 }
@@ -3200,16 +3111,6 @@ kbd {
   }
 }
 
-@media (min-width: 801px) {
-  .attributes-panel .attribute-list {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .attributes-panel .attribute-row {
-    grid-template-columns: minmax(72px, 0.85fr) minmax(36px, 1fr) 22px;
-    gap: 6px;
-  }
-}
 
 @media (max-width: 800px) {
   .memory-section-label {
