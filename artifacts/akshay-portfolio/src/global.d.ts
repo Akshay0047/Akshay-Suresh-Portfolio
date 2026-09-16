@@ -6,6 +6,8 @@ type ModelViewerElement = React.DetailedHTMLProps<React.HTMLAttributes<HTMLEleme
   'camera-controls'?: boolean | string;
   'auto-rotate'?: boolean | string;
   'camera-orbit'?: string;
+  'camera-target'?: string;
+  'field-of-view'?: string;
   'environment-image'?: string;
   exposure?: string | number;
   'shadow-intensity'?: string | number;

@@ -2017,10 +2017,72 @@ kbd {
   background: linear-gradient(90deg, #8c4d23, #b96c2b 50%, #70401f 100%);
 }
 
+.equipment-loadout-arena {
+  isolation: isolate;
+}
+
+.equipment-right-wing {
+  pointer-events: none;
+}
+
+.equipment-right-wing > * {
+  pointer-events: auto;
+}
+
 .equipment-panel model-viewer {
   position: relative;
   z-index: 2;
   --poster-color: transparent;
+}
+
+.prosthetic-tool-card .prosthetic-corner {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-color: rgba(213, 155, 88, 0.55);
+  pointer-events: none;
+}
+
+.prosthetic-corner-tl {
+  top: 6px;
+  left: 6px;
+  border-top: 1px solid;
+  border-left: 1px solid;
+}
+
+.prosthetic-corner-tr {
+  top: 6px;
+  right: 6px;
+  border-top: 1px solid;
+  border-right: 1px solid;
+}
+
+.prosthetic-corner-bl {
+  bottom: 6px;
+  left: 6px;
+  border-bottom: 1px solid;
+  border-left: 1px solid;
+}
+
+.prosthetic-corner-br {
+  right: 6px;
+  bottom: 6px;
+  border-right: 1px solid;
+  border-bottom: 1px solid;
+}
+
+.prosthetic-viewport {
+  contain: paint;
+  isolation: isolate;
+}
+
+.prosthetic-viewport model-viewer {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  overflow: hidden;
 }
 
 .title-options-backdrop {

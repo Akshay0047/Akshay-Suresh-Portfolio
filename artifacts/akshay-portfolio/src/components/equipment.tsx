@@ -1,8 +1,8 @@
 import '@google/model-viewer';
 import { motion, useReducedMotion } from 'framer-motion';
-import { CircleDot, Code2, Database, ShieldCheck, Sparkles } from 'lucide-react';
+import { CircleDot, Code2, Crosshair, Database, ShieldCheck, Sparkles } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type RefObject } from 'react';
 
 const assetBase = import.meta.env.BASE_URL.replace(/\/$/, '');
 const portraitSrc = `${assetBase}/portrait.jpg`;
@@ -76,6 +76,51 @@ function EquipmentSlot({
   );
 }
 
+function ProstheticToolCard({ modelRef }: { modelRef: RefObject<HTMLElement | null> }) {
+  return (
+    <article className="prosthetic-tool-card relative flex h-full w-full flex-col overflow-hidden border border-[#4a3b2c] bg-[#141210]/90 p-3 shadow-[inset_0_1px_0_rgba(212,178,140,0.06),0_12px_32px_rgba(0,0,0,0.35)]">
+      <span className="prosthetic-corner prosthetic-corner-tl" aria-hidden="true" />
+      <span className="prosthetic-corner prosthetic-corner-tr" aria-hidden="true" />
+      <span className="prosthetic-corner prosthetic-corner-bl" aria-hidden="true" />
+      <span className="prosthetic-corner prosthetic-corner-br" aria-hidden="true" />
+
+      <header className="shrink-0 border-b border-[rgba(74,59,44,0.45)] pb-2">
+        <span className="text-[6px] tracking-[0.14em] text-[var(--amber-bright)]">[PROSTHETIC TOOL / 03]</span>
+        <div className="mt-1.5 flex items-center gap-2">
+          <span className="grid size-[24px] shrink-0 place-items-center border border-[rgba(190,176,148,0.28)] bg-[rgba(20,18,16,0.85)] text-[#e5a06b] [transform:rotate(45deg)]">
+            <Crosshair size={12} strokeWidth={1.35} className="[transform:rotate(-45deg)]" />
+          </span>
+          <h2 className="font-[family-name:var(--app-font-serif)] text-[15px] font-semibold leading-none tracking-[0.03em] text-[var(--paper-bright)]">
+            KUNAI OF FOCUS
+          </h2>
+        </div>
+      </header>
+
+      <div className="prosthetic-viewport relative my-1.5 h-[180px] w-full shrink-0 overflow-hidden border border-[rgba(74,59,44,0.55)] bg-[rgba(8,7,6,0.72)]">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,rgba(213,155,88,0.08),transparent_58%)]" aria-hidden="true" />
+        <model-viewer
+          ref={modelRef}
+          src={kunaiSrc}
+          shadow-intensity="1"
+          interaction-prompt="none"
+          camera-orbit="-45deg 55deg auto"
+          style={{ width: '100%', height: '100%', backgroundColor: 'transparent' }}
+        />
+      </div>
+
+      <footer className="shrink-0 space-y-1.5">
+        <p className="line-clamp-2 text-[7px] leading-snug text-[#a49b8b]">
+          A heavy iron-forged shinobi blade used to puncture complex backend bottlenecks.
+        </p>
+        <div className="flex items-center justify-between gap-2 border-t border-[rgba(74,59,44,0.35)] pt-1.5 text-[6px] tracking-[0.1em] text-[#8f8678]">
+          <span><strong className="text-[#d4b28c]">DURABILITY</strong> · 99.9%</span>
+          <span><strong className="text-[#d4b28c]">EFFECT</strong> · Sharpness</span>
+        </div>
+      </footer>
+    </article>
+  );
+}
+
 export function EquipmentPanel() {
   const modelRef = useRef<HTMLElement | null>(null);
   const prefersReducedMotion = useReducedMotion();
@@ -86,8 +131,8 @@ export function EquipmentPanel() {
 
       const xPercent = event.clientX / window.innerWidth - 0.5;
       const yPercent = event.clientY / window.innerHeight - 0.5;
-      const orbitX = -45 - xPercent * 60;
-      const orbitY = 55 - yPercent * 40;
+      const orbitX = -45 - xPercent * 50;
+      const orbitY = 55 - yPercent * 30;
 
       modelRef.current.setAttribute('camera-orbit', `${orbitX}deg ${orbitY}deg auto`);
     };
@@ -108,7 +153,7 @@ export function EquipmentPanel() {
         <h1>The<span> arsenal</span></h1>
       </div>
 
-      <div className="relative mx-auto mt-4 flex h-[750px] w-full max-w-[1300px] items-center justify-center overflow-visible">
+      <div className="equipment-loadout-arena relative mx-auto mt-4 h-[750px] w-full max-w-[1300px]">
         {/* 1. CENTER: The Portrait with Ink Fade Mask */}
         <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 h-[620px] w-[380px] -translate-x-1/2 -translate-y-1/2">
           <img
@@ -124,25 +169,13 @@ export function EquipmentPanel() {
           />
         </div>
 
-        {/* 2. TOP RIGHT: The 3D Kunai (Above the right-side cards) */}
-        <div className="pointer-events-none absolute top-[-80%] right-[0%] z-30 h-[280px] w-[280px]">
-          <model-viewer
-            ref={modelRef}
-            src={kunaiSrc}
-            shadow-intensity="1"
-            interaction-prompt="none"
-            camera-orbit="-45deg 55deg auto"
-            style={{ width: '100%', height: '100%', backgroundColor: 'transparent' }}
-          />
-        </div>
-
-        {/* 3. THE ARC: Floating Equipment Cards (Staggered to form a clean semi-circle) */}
+        {/* 2. THE ARC: Floating Equipment Cards (Staggered to form a clean semi-circle) */}
 
         {/* React (Top Left) */}
         <motion.div
           animate={prefersReducedMotion ? undefined : { y: [-8, 8, -8] }}
           transition={prefersReducedMotion ? undefined : { duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute top-[12%] left-[2%] z-40 w-[280px] lg:w-[310px]"
+          className="absolute top-[12%] left-[4%] z-40 w-[280px] lg:w-[310px]"
         >
           <EquipmentSlot
             slot="PRIMARY ARM"
@@ -157,7 +190,7 @@ export function EquipmentPanel() {
         <motion.div
           animate={prefersReducedMotion ? undefined : { y: [-8, 8, -8] }}
           transition={prefersReducedMotion ? undefined : { duration: 4.5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
-          className="absolute top-[62%] left-[12%] z-40 w-[280px] lg:w-[310px]"
+          className="absolute top-[62%] left-[10%] z-40 w-[280px] lg:w-[310px]"
         >
           <EquipmentSlot
             slot="SECONDARY ARM"
@@ -168,26 +201,36 @@ export function EquipmentPanel() {
           />
         </motion.div>
 
-        {/* Django (Top Right) */}
-        <motion.div
-          animate={prefersReducedMotion ? undefined : { y: [-8, 8, -8] }}
-          transition={prefersReducedMotion ? undefined : { duration: 4.2, repeat: Infinity, ease: 'easeInOut', delay: 0.2 }}
-          className="absolute top-[12%] right-[2%] z-40 w-[280px] lg:w-[310px]"
-        >
-          <EquipmentSlot
-            slot="PROSTHETIC TOOL"
-            title="DJANGO REST"
-            detail="Structured APIs with authentication, permissions, and dependable data flow."
-            icon={ShieldCheck}
-            align="left"
-          />
-        </motion.div>
+        {/* Right wing — Kunai + Django stacked to prevent vertical collision */}
+        <div className="equipment-right-wing absolute top-[6%] right-[4%] z-40 flex w-[320px] flex-col gap-4">
+          <motion.div
+            animate={prefersReducedMotion ? undefined : { y: [-8, 8, -8] }}
+            transition={prefersReducedMotion ? undefined : { duration: 4.2, repeat: Infinity, ease: 'easeInOut', delay: 0.2 }}
+            className="h-[295px] w-full shrink-0"
+          >
+            <ProstheticToolCard modelRef={modelRef} />
+          </motion.div>
 
-        {/* Databases (Bottom Right - Pushed inward to create the curve) */}
+          <motion.div
+            animate={prefersReducedMotion ? undefined : { y: [-8, 8, -8] }}
+            transition={prefersReducedMotion ? undefined : { duration: 4.3, repeat: Infinity, ease: 'easeInOut', delay: 0.35 }}
+            className="w-full"
+          >
+            <EquipmentSlot
+              slot="API FRAME"
+              title="DJANGO REST"
+              detail="Structured APIs with authentication, permissions, and dependable data flow."
+              icon={ShieldCheck}
+              align="left"
+            />
+          </motion.div>
+        </div>
+
+        {/* Databases (Bottom Right arc) */}
         <motion.div
           animate={prefersReducedMotion ? undefined : { y: [-8, 8, -8] }}
           transition={prefersReducedMotion ? undefined : { duration: 4.7, repeat: Infinity, ease: 'easeInOut', delay: 0.7 }}
-          className="absolute top-[62%] right-[12%] z-40 w-[280px] lg:w-[310px]"
+          className="absolute top-[67%] right-[8%] z-40 w-[280px] lg:w-[310px]"
         >
           <EquipmentSlot
             slot="CONSUMABLES / DATABASES"
