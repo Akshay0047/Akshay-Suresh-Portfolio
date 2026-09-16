@@ -154,7 +154,7 @@ export function EquipmentPanel() {
 
       <div className="equipment-loadout-arena absolute inset-0 z-20 h-full w-full pointer-events-none">
         {/* 1. CENTER: The Portrait with Ink Fade Mask */}
-        <div className="absolute bottom-[20px] left-1/2 -translate-x-1/2 z-10 scale-90 origin-bottom pointer-events-auto">
+        <div className="absolute bottom-[-15px] left-1/2 -translate-x-1/2 z-10 scale-90 origin-bottom pointer-events-auto">
           <img
             src={portraitSrc}
             className="h-[620px] w-[380px] object-cover object-center opacity-65 grayscale contrast-125 sepia-[.3] mix-blend-luminosity"
