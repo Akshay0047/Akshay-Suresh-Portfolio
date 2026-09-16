@@ -154,13 +154,15 @@ export function EquipmentPanel() {
 
       <div className="equipment-loadout-arena absolute inset-0 z-20 h-full w-full pointer-events-none">
         {/* 1. CENTER: The Portrait with Ink Fade Mask */}
-        <div className="absolute bottom-[-15px] left-1/2 -translate-x-1/2 z-10 scale-90 origin-bottom pointer-events-auto">
+        <div className="absolute bottom-[-15px] left-1/2 z-10 origin-bottom -translate-x-1/2 scale-90 overflow-hidden rounded-t-[4rem] pointer-events-auto">
           <img
             src={portraitSrc}
             className="h-[620px] w-[380px] object-cover object-center opacity-65 grayscale contrast-125 sepia-[.3] mix-blend-luminosity"
             style={{
-              WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 25%, black 70%, transparent 100%), radial-gradient(circle at 50% 50%, black 50%, transparent 90%)',
-              maskImage: 'linear-gradient(to bottom, transparent 0%, black 25%, black 70%, transparent 100%), radial-gradient(circle at 50% 50%, black 50%, transparent 90%)',
+              WebkitMaskImage:
+                'linear-gradient(to bottom, transparent 0%, black 22%, black 68%, transparent 100%), linear-gradient(to right, transparent 0%, black 18%, black 82%, transparent 100%)',
+              maskImage:
+                'linear-gradient(to bottom, transparent 0%, black 22%, black 68%, transparent 100%), linear-gradient(to right, transparent 0%, black 18%, black 82%, transparent 100%)',
               WebkitMaskComposite: 'intersect',
               maskComposite: 'intersect',
             }}
