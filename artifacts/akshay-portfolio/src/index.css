@@ -2048,54 +2048,23 @@ kbd {
 }
 
 .scroll-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 45;
-  display: grid;
-  place-items: center;
   padding: clamp(16px, 4vw, 32px);
   overflow: hidden;
-  background:
-    radial-gradient(circle at 50% 42%, rgba(139, 0, 0, 0.08), transparent 34%),
-    radial-gradient(circle at center, rgba(213, 155, 88, 0.05), transparent 48%),
-    rgba(4, 3, 2, 0.78);
   backdrop-filter: blur(4px);
-}
-
-.scroll-embers {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.scroll-ember {
-  position: absolute;
-  border-radius: 999px;
-  background: rgba(255, 120, 48, 0.85);
-  box-shadow: 0 0 8px rgba(255, 95, 35, 0.55);
-  animation: scroll-ember-drift linear infinite;
-}
-
-@keyframes scroll-ember-drift {
-  0% {
-    opacity: 0;
-    transform: translateY(8px) translateX(0);
-  }
-
-  20% {
-    opacity: 0.9;
-  }
-
-  100% {
-    opacity: 0;
-    transform: translateY(-42px) translateX(10px);
-  }
 }
 
 .scroll-assembly-vertical {
   position: relative;
-  width: min(760px, 100%);
-  min-height: min(82vh, 860px);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.scroll-assembly-vertical.is-save-mode {
+  height: 642px;
+}
+
+.scroll-assembly-vertical.is-chapter-mode {
+  height: min(82vh, 782px);
 }
 
 .scroll-rod-h-wrap {
@@ -2106,6 +2075,15 @@ kbd {
   z-index: 4;
   width: 100%;
   margin-top: -11px;
+  pointer-events: none;
+}
+
+.scroll-rod-h-wrap-top {
+  z-index: 5;
+}
+
+.scroll-rod-h-wrap-bottom {
+  z-index: 5;
 }
 
 .scroll-rod-h {
@@ -2133,11 +2111,11 @@ kbd {
 }
 
 .scroll-rod-h-cap-left {
-  left: -4px;
+  left: 0;
 }
 
 .scroll-rod-h-cap-right {
-  right: -4px;
+  right: 0;
 }
 
 .scroll-rod-h-ring {
@@ -2166,85 +2144,63 @@ kbd {
 .ancient-scroll-parchment {
   position: absolute;
   top: 50%;
-  right: 14px;
-  left: 14px;
+  right: 0;
+  left: 0;
   z-index: 2;
   display: flex;
+  width: 100%;
   overflow: hidden;
   transform: translateY(-50%);
-  background:
-    radial-gradient(circle at 50% 0%, rgba(213, 155, 88, 0.08), transparent 38%),
-    linear-gradient(180deg, #221e1a 0%, #1e1a17 42%, #171411 100%);
-  border: 1px solid rgba(74, 59, 44, 0.65);
+  background: linear-gradient(180deg, #1c1916 0%, #141210 48%, #12100e 100%);
+  border: 1px solid rgba(74, 59, 44, 0.55);
   box-shadow:
-    inset 0 0 48px rgba(0, 0, 0, 0.45),
-    inset 0 0 0 1px rgba(212, 178, 140, 0.06),
-    0 18px 40px rgba(0, 0, 0, 0.5);
-}
-
-.ancient-scroll-grain {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.22;
-  background-image:
-    radial-gradient(rgba(255, 255, 255, 0.04) 0.6px, transparent 0.6px),
-    radial-gradient(rgba(0, 0, 0, 0.18) 0.5px, transparent 0.5px);
-  background-size: 3px 3px, 5px 5px;
-  mix-blend-mode: overlay;
-}
-
-.ancient-scroll-vignette {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(circle at center, transparent 42%, rgba(0, 0, 0, 0.55) 100%),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.42), transparent 18%, transparent 82%, rgba(0, 0, 0, 0.48));
-}
-
-.ancient-scroll-burn {
-  position: absolute;
-  left: 0;
-  right: 0;
-  z-index: 2;
-  height: 28px;
-  pointer-events: none;
-  background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.92), rgba(20, 10, 6, 0.45) 42%, transparent),
-    radial-gradient(ellipse at 50% 0%, rgba(139, 0, 0, 0.28), transparent 72%);
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 56'%3E%3Cpath fill='black' d='M0 24 C90 4 180 34 270 14 C360 0 450 30 540 12 C630 0 720 28 810 10 C900 0 990 26 1080 12 C1140 4 1170 18 1200 16 L1200 56 L0 56 Z'/%3E%3C/svg%3E");
-  mask-size: 100% 100%;
-  mask-repeat: no-repeat;
-}
-
-.ancient-scroll-burn-bottom {
-  bottom: 0;
-  transform: rotate(180deg);
+    inset 0 1px 0 rgba(212, 178, 140, 0.06),
+    0 18px 40px rgba(0, 0, 0, 0.48);
 }
 
 .ancient-scroll-inner {
   position: relative;
-  z-index: 3;
-  display: flex;
+  z-index: 1;
+  width: 100%;
   height: 100%;
-  flex-direction: column;
-  gap: 18px;
+  gap: 16px;
   min-height: 0;
-  padding: 14px 24px 22px;
+  padding: 16px 28px 20px;
+}
+
+.ancient-scroll-inner.is-save-mode {
+  justify-content: center;
+  gap: 14px;
+  padding: 14px 24px 16px;
+}
+
+.ancient-scroll-inner.is-chapter-mode {
+  gap: 12px;
+  min-height: 0;
+  padding: 14px 22px 16px;
 }
 
 .ancient-scroll-content {
-  flex: 1;
+  flex: 1 1 auto;
+  width: 100%;
   min-height: 0;
-  overflow-y: auto;
-  padding-right: 6px;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(212, 178, 140, 0.35) transparent;
+}
+
+.ancient-scroll-content.is-save-list {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.scroll-save-list-wrap {
+  width: 100%;
 }
 
 .scroll-wax-seal {
   display: grid;
+  flex-shrink: 0;
   justify-items: center;
   gap: 8px;
   margin-inline: auto;
@@ -2290,8 +2246,16 @@ kbd {
   text-transform: uppercase;
 }
 
+.scroll-save-list {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
 .scroll-content-header {
-  margin-bottom: 18px;
+  margin-bottom: 16px;
   text-align: center;
 }
 
@@ -2323,16 +2287,19 @@ kbd {
 .scroll-save-slots {
   display: grid;
   gap: 12px;
+  width: min(100%, 420px);
+  margin-inline: auto;
 }
 
 .scroll-save-slot {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 14px;
+  display: flex;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
+  gap: 5px;
   width: 100%;
-  padding: 14px 16px;
-  text-align: left;
+  padding: 14px 18px;
+  text-align: center;
   background: rgba(20, 18, 16, 0.8);
   border: 1px solid #4a3b2c;
   color: #d4b28c;
@@ -2344,7 +2311,7 @@ kbd {
   border-color: rgba(213, 155, 88, 0.55);
   background: rgba(28, 24, 20, 0.92);
   box-shadow: inset 0 0 0 1px rgba(213, 155, 88, 0.12);
-  transform: translateX(4px);
+  transform: translateY(-2px);
 }
 
 .scroll-save-slot-index {
@@ -2365,7 +2332,6 @@ kbd {
 
 .scroll-save-slot-meta {
   display: block;
-  margin-top: 6px;
   color: #8f8678;
   font-family: var(--app-font-mono);
   font-size: 8px;
@@ -2373,22 +2339,57 @@ kbd {
   text-transform: uppercase;
 }
 
-.scroll-save-slot-arrow {
-  color: #e5a06b;
-  font-size: 18px;
+.ancient-scroll-content.is-chapter {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.scroll-chapter-details {
+  display: flex;
+  width: 100%;
+  min-height: 0;
+  flex-direction: column;
+}
+
+/* Custom Sekiro scrollbar — chapter detail view only */
+.custom-scroll {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #7a5c38 rgba(15, 13, 11, 0.9);
+}
+
+.custom-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scroll::-webkit-scrollbar-track {
+  background: rgba(15, 13, 11, 0.9);
+  border-radius: 4px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: #7a5c38;
+  border: 1px solid #3a291b;
+  border-radius: 4px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: #b8976a;
 }
 
 .scroll-chapter-summary,
 .scroll-chapter-background {
-  margin: 0 0 14px;
+  margin: 0 0 12px;
   color: #b7a996;
   font-family: var(--app-font-mono);
   font-size: 10px;
-  line-height: 1.75;
+  line-height: 1.65;
 }
 
 .scroll-chapter-section {
-  margin-top: 22px;
+  margin-top: 18px;
 }
 
 .scroll-chapter-section h3 {
@@ -2454,12 +2455,17 @@ kbd {
 }
 
 @media (max-width: 800px) {
-  .ancient-scroll-inner {
-    padding-inline: 14px;
+  .scroll-assembly-vertical.is-save-mode {
+    height: min(620px, 88vh);
   }
 
-  .ancient-scroll-parchment {
-    width: calc(100% - 12px);
+  .scroll-assembly-vertical.is-chapter-mode {
+    height: min(78vh, 720px);
+  }
+
+  .ancient-scroll-inner,
+  .ancient-scroll-inner.is-save-mode {
+    padding-inline: 16px;
   }
 }
 

@@ -1,8 +1,11 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { getSaveChapter, saveChapters, type SaveChapter } from '@/data/save-chapters';
 
-const PARCHMENT_HEIGHT = 'min(72vh, 760px)';
+const PARCHMENT_HEIGHT_SAVE = '600px';
+const PARCHMENT_HEIGHT_CHAPTER = 'min(72vh, 760px)';
+const ROD_OFFSET_SAVE = '310px';
+const ROD_OFFSET_CHAPTER = 'calc(min(36vh, 380px) + 10px)';
 const ROLL_DURATION = 0.88;
 
 type LoadProfileExperienceProps = {
@@ -21,55 +24,29 @@ export function LoadProfileExperience({
   onCloseScroll,
 }: LoadProfileExperienceProps) {
   const chapter = selectedSaveFile ? getSaveChapter(selectedSaveFile) : null;
+  const [scrollSession, setScrollSession] = useState(0);
+
+  useEffect(() => {
+    if (isOpenSaveMenu) setScrollSession((current) => current + 1);
+  }, [isOpenSaveMenu]);
+
+  const handleCloseSaveMenu = useCallback(() => {
+    onCloseSaveMenu();
+    onCloseScroll();
+  }, [onCloseSaveMenu, onCloseScroll]);
 
   return (
     <AnimatePresence>
       {isOpenSaveMenu && (
         <AncientScroll
-          key="ancient-scroll"
+          key={`ancient-scroll-${scrollSession}`}
           chapter={chapter ?? null}
           onSelectSave={onSelectSaveFile}
-          onSeal={() => {
-            if (chapter) onCloseScroll();
-            else onCloseSaveMenu();
-          }}
-          onCloseAll={onCloseSaveMenu}
+          onReturnToSaveList={onCloseScroll}
+          onCloseSaveMenu={handleCloseSaveMenu}
         />
       )}
     </AnimatePresence>
-  );
-}
-
-function ScrollEmbers() {
-  const embers = useMemo(
-    () =>
-      Array.from({ length: 18 }, (_, index) => ({
-        left: `${(index * 19 + 8) % 100}%`,
-        top: `${(index * 31 + 12) % 100}%`,
-        delay: `${(index % 6) * 0.45}s`,
-        duration: `${4 + (index % 4)}s`,
-        size: index % 4 === 0 ? 3 : 2,
-      })),
-    [],
-  );
-
-  return (
-    <div className="scroll-embers" aria-hidden="true">
-      {embers.map((ember, index) => (
-        <span
-          key={`scroll-ember-${index}`}
-          className="scroll-ember"
-          style={{
-            left: ember.left,
-            top: ember.top,
-            width: ember.size,
-            height: ember.size,
-            animationDelay: ember.delay,
-            animationDuration: ember.duration,
-          }}
-        />
-      ))}
-    </div>
   );
 }
 
@@ -123,13 +100,10 @@ function SaveSlotList({ onSelect }: { onSelect: (id: string) => void }) {
             transition={{ delay: 0.45 + index * 0.08, duration: 0.35, ease: 'easeOut' }}
           >
             <span className="scroll-save-slot-index">[{entry.slot}]</span>
-            <span className="scroll-save-slot-copy">
-              <span className="scroll-save-slot-title">{entry.title}</span>
-              <span className="scroll-save-slot-meta">
-                {entry.status} — {entry.year}
-              </span>
+            <span className="scroll-save-slot-title">{entry.title}</span>
+            <span className="scroll-save-slot-meta">
+              {entry.status} — {entry.year}
             </span>
-            <span className="scroll-save-slot-arrow" aria-hidden="true">›</span>
           </motion.button>
         ))}
       </div>
@@ -140,48 +114,50 @@ function SaveSlotList({ onSelect }: { onSelect: (id: string) => void }) {
 function ChapterDetails({ chapter }: { chapter: SaveChapter }) {
   return (
     <motion.div
-      className="scroll-chapter-details"
+      className="scroll-chapter-details w-full"
       initial={{ opacity: 0, filter: 'blur(8px)' }}
       animate={{ opacity: 1, filter: 'blur(0px)' }}
       exit={{ opacity: 0, filter: 'blur(8px)' }}
       transition={{ duration: 0.55, ease: 'easeOut' }}
     >
-      <header className="scroll-content-header">
-        <span className="scroll-content-kicker">{chapter.slot} / {chapter.status}</span>
-        <h2 className="scroll-content-title">{chapter.title}</h2>
-        <p className="scroll-content-lead">{chapter.year}</p>
-      </header>
+      <div className="custom-scroll my-2 max-h-[55vh] w-full overflow-y-auto pr-3">
+        <header className="scroll-content-header">
+          <span className="scroll-content-kicker">{chapter.slot} / {chapter.status}</span>
+          <h2 className="scroll-content-title">{chapter.title}</h2>
+          <p className="scroll-content-lead">{chapter.year}</p>
+        </header>
 
-      <p className="scroll-chapter-summary">{chapter.summary}</p>
-      <p className="scroll-chapter-background">{chapter.background}</p>
+        <p className="scroll-chapter-summary">{chapter.summary}</p>
+        <p className="scroll-chapter-background">{chapter.background}</p>
 
-      <section className="scroll-chapter-section">
-        <h3>CHRONICLE</h3>
-        <ul className="scroll-chapter-timeline">
-          {chapter.timeline.map((entry) => (
-            <li key={`${entry.date}-${entry.title}`}>
-              <span>{entry.date}</span>
-              <strong>{entry.title}</strong>
-              <p>{entry.detail}</p>
-            </li>
-          ))}
-        </ul>
-      </section>
+        <section className="scroll-chapter-section">
+          <h3>CHRONICLE</h3>
+          <ul className="scroll-chapter-timeline">
+            {chapter.timeline.map((entry) => (
+              <li key={`${entry.date}-${entry.title}`}>
+                <span>{entry.date}</span>
+                <strong>{entry.title}</strong>
+                <p>{entry.detail}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
 
-      <section className="scroll-chapter-section">
-        <h3>ARMAMENTS / PROJECTS</h3>
-        <ul className="scroll-chapter-projects">
-          {chapter.projects.map((project) => (
-            <li key={project.name}>
-              <div className="scroll-project-head">
-                <strong>{project.name}</strong>
-                <span>{project.stack}</span>
-              </div>
-              <p>{project.detail}</p>
-            </li>
-          ))}
-        </ul>
-      </section>
+        <section className="scroll-chapter-section">
+          <h3>ARMAMENTS / PROJECTS</h3>
+          <ul className="scroll-chapter-projects">
+            {chapter.projects.map((project) => (
+              <li key={project.name}>
+                <div className="scroll-project-head">
+                  <strong>{project.name}</strong>
+                  <span>{project.stack}</span>
+                </div>
+                <p>{project.detail}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </div>
     </motion.div>
   );
 }
@@ -189,54 +165,105 @@ function ChapterDetails({ chapter }: { chapter: SaveChapter }) {
 function AncientScroll({
   chapter,
   onSelectSave,
-  onSeal,
-  onCloseAll,
+  onReturnToSaveList,
+  onCloseSaveMenu,
 }: {
   chapter: SaveChapter | null;
   onSelectSave: (id: string) => void;
-  onSeal: () => void;
-  onCloseAll: () => void;
+  onReturnToSaveList: () => void;
+  onCloseSaveMenu: () => void;
 }) {
   const prefersReducedMotion = useReducedMotion();
-  const [isUnfurled, setIsUnfurled] = useState(prefersReducedMotion);
+  const [isUnfurled, setIsUnfurled] = useState(false);
+  const rollTimeoutRef = useRef<number | null>(null);
+  const reunfurlTimeoutRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    if (prefersReducedMotion) return;
-    const frame = window.requestAnimationFrame(() => setIsUnfurled(true));
-    return () => window.cancelAnimationFrame(frame);
-  }, [prefersReducedMotion]);
+  const clearRollTimers = useCallback(() => {
+    if (rollTimeoutRef.current !== null) {
+      window.clearTimeout(rollTimeoutRef.current);
+      rollTimeoutRef.current = null;
+    }
+    if (reunfurlTimeoutRef.current !== null) {
+      window.clearTimeout(reunfurlTimeoutRef.current);
+      reunfurlTimeoutRef.current = null;
+    }
+  }, []);
 
-  const handleSeal = () => {
+  const triggerUnfurl = useCallback(() => {
     if (prefersReducedMotion) {
-      onSeal();
+      setIsUnfurled(true);
       return;
     }
 
     setIsUnfurled(false);
-    window.setTimeout(onSeal, ROLL_DURATION * 1000);
+    reunfurlTimeoutRef.current = window.setTimeout(() => {
+      reunfurlTimeoutRef.current = null;
+      window.requestAnimationFrame(() => setIsUnfurled(true));
+    }, 32);
+  }, [prefersReducedMotion]);
+
+  useEffect(() => {
+    triggerUnfurl();
+    return clearRollTimers;
+  }, [clearRollTimers, triggerUnfurl]);
+
+  const rollUp = useCallback(
+    (onComplete: () => void) => {
+      clearRollTimers();
+
+      if (prefersReducedMotion) {
+        onComplete();
+        return;
+      }
+
+      setIsUnfurled(false);
+      rollTimeoutRef.current = window.setTimeout(() => {
+        rollTimeoutRef.current = null;
+        onComplete();
+      }, ROLL_DURATION * 1000);
+    },
+    [clearRollTimers, prefersReducedMotion],
+  );
+
+  const handleSeal = () => {
+    if (chapter) {
+      rollUp(() => {
+        onReturnToSaveList();
+        triggerUnfurl();
+      });
+      return;
+    }
+
+    rollUp(onCloseSaveMenu);
+  };
+
+  const handleDismiss = () => {
+    rollUp(onCloseSaveMenu);
   };
 
   const rollTransition = prefersReducedMotion
     ? { duration: 0.2 }
     : { duration: ROLL_DURATION, ease: [0.22, 1, 0.36, 1] as const };
 
-  const rodOffset = 'calc(min(36vh, 380px) + 10px)';
+  const parchmentHeight = chapter ? PARCHMENT_HEIGHT_CHAPTER : PARCHMENT_HEIGHT_SAVE;
+  const rodOffset = chapter ? ROD_OFFSET_CHAPTER : ROD_OFFSET_SAVE;
 
   return (
     <motion.div
-      className="scroll-overlay"
+      className="scroll-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/80"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.35 }}
-      onClick={onCloseAll}
+      onClick={handleDismiss}
       role="dialog"
       aria-modal="true"
       aria-label="Load profile scroll"
     >
-      <ScrollEmbers />
-
-      <div className="scroll-assembly-vertical" onClick={(event) => event.stopPropagation()}>
+      <div
+        className={`scroll-assembly-vertical mx-auto w-[90%] max-w-[750px] ${chapter ? 'is-chapter-mode' : 'is-save-mode'}`}
+        onClick={(event) => event.stopPropagation()}
+      >
         <motion.div
           className="scroll-rod-h-wrap scroll-rod-h-wrap-top"
           initial={{ y: 0 }}
@@ -250,30 +277,36 @@ function AncientScroll({
           className="ancient-scroll-parchment"
           initial={{ height: 0, opacity: 0 }}
           animate={{
-            height: isUnfurled ? PARCHMENT_HEIGHT : 0,
+            height: isUnfurled ? parchmentHeight : 0,
             opacity: isUnfurled ? 1 : 0,
           }}
           transition={rollTransition}
           style={{ pointerEvents: isUnfurled ? 'auto' : 'none' }}
         >
-          <div className="ancient-scroll-burn ancient-scroll-burn-top" aria-hidden="true" />
-          <div className="ancient-scroll-burn ancient-scroll-burn-bottom" aria-hidden="true" />
-          <div className="ancient-scroll-vignette" aria-hidden="true" />
-          <div className="ancient-scroll-grain" aria-hidden="true" />
-
-          <div className="ancient-scroll-inner">
+          <div
+            className={`ancient-scroll-inner flex flex-col items-center ${
+              chapter ? 'is-chapter-mode' : 'is-save-mode'
+            }`}
+          >
             <WaxSealButton
               label={chapter ? 'Roll up chapter' : 'Roll up scroll'}
               onClick={handleSeal}
             />
 
-            <div className="ancient-scroll-content">
+            <div
+              className={
+                chapter
+                  ? 'ancient-scroll-content is-chapter overflow-hidden'
+                  : 'ancient-scroll-content is-save-list overflow-hidden'
+              }
+            >
               <AnimatePresence mode="wait">
                 {chapter ? (
                   <ChapterDetails key={chapter.id} chapter={chapter} />
                 ) : (
                   <motion.div
                     key="save-list"
+                    className="scroll-save-list-wrap"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
