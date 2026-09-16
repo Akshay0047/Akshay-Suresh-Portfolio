@@ -3295,41 +3295,30 @@ kbd {
 }
 
 .timeline-card h2 {
-  display: -webkit-box;
   margin: 0;
-  overflow: hidden;
   color: var(--paper-bright);
   font-family: var(--app-font-serif);
   font-size: clamp(16px, 1.55vw, 23px);
   font-weight: 600;
-  line-height: 0.88;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  line-height: 1.05;
 }
 
 .timeline-card p {
-  display: -webkit-box;
   margin: 4px 0 0;
-  overflow: hidden;
   color: var(--paper);
   font-family: var(--app-font-mono);
   font-size: 7px;
   letter-spacing: 0.03em;
-  line-height: 1.2;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 1;
+  line-height: 1.45;
 }
 
 .timeline-card small {
-  display: -webkit-box;
+  display: block;
   margin-top: 4px;
-  overflow: hidden;
   color: #928a7b;
   font-family: var(--app-font-mono);
   font-size: 7px;
-  line-height: 1.25;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 1;
+  line-height: 1.45;
 }
 
 .signal-panel .signal-card,
@@ -3421,7 +3410,7 @@ kbd {
   }
 
   .timeline-card small {
-    display: none;
+    display: block;
   }
 
   .signal-panel .signal-footer {
