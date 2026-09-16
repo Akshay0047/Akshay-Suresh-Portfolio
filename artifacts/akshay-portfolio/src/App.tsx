@@ -352,18 +352,28 @@ function distanceToSegment(
   return Math.hypot(pointX - (startX + projection * segmentX), pointY - (startY + projection * segmentY));
 }
 
+const FRUIT_ARCADE_MAX_MARKS = 4;
+
 function FruitArcade() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const objects = useRef<ArcadeObject[]>([]);
   const splashes = useRef<ArcadeSplash[]>([]);
   const marks = useRef<ArcadeMark[]>([]);
-  const pointer = useRef<{ x: number; y: number } | null>(null);
+  const pointerPos = useRef({ x: 0, y: 0, hasValue: false });
+  const prevPointerPos = useRef({ x: 0, y: 0, hasValue: false });
   const objectId = useRef(0);
   const lastActivity = useRef(0);
   const activeRef = useRef(false);
+  const scoreRef = useRef(0);
+  const scoreLabelRef = useRef<HTMLElement>(null);
   const [active, setActive] = useState(false);
   const [gameOver, setGameOver] = useState(false);
-  const [score, setScore] = useState(0);
+
+  const updateScoreLabel = (value: number) => {
+    if (scoreLabelRef.current) {
+      scoreLabelRef.current.textContent = String(value).padStart(2, '0');
+    }
+  };
 
   useEffect(() => {
     activeRef.current = active;
@@ -371,7 +381,8 @@ function FruitArcade() {
       objects.current = [];
       splashes.current = [];
       marks.current = [];
-      pointer.current = null;
+      pointerPos.current.hasValue = false;
+      prevPointerPos.current.hasValue = false;
       lastActivity.current = 0;
     }
   }, [active]);
@@ -422,6 +433,9 @@ function FruitArcade() {
           width: 2 + Math.random() * 3.5,
         })),
       });
+      while (marks.current.length > FRUIT_ARCADE_MAX_MARKS) {
+        marks.current.shift();
+      }
       for (let index = 0; index < 42; index += 1) {
         const direction = (Math.PI * 2 * index) / 42 + Math.random() * 0.55;
         const speed = 3 + Math.random() * 8;
@@ -446,29 +460,61 @@ function FruitArcade() {
         setGameOver(true);
         return;
       }
-      setScore((current) => current + 1);
+      scoreRef.current += 1;
+      updateScoreLabel(scoreRef.current);
+    };
+
+    const processPointerCollisions = () => {
+      const current = pointerPos.current;
+      const previous = prevPointerPos.current;
+      if (!activeRef.current || !current.hasValue || !previous.hasValue) {
+        return;
+      }
+
+      const deltaX = current.x - previous.x;
+      const deltaY = current.y - previous.y;
+      if (deltaX === 0 && deltaY === 0) {
+        return;
+      }
+
+      const sliceAngle = Math.atan2(deltaY, deltaX);
+      for (let index = 0; index < objects.current.length; index += 1) {
+        const item = objects.current[index];
+        if (
+          item.sliced ||
+          distanceToSegment(item.x, item.y, previous.x, previous.y, current.x, current.y) > item.radius + 12
+        ) {
+          continue;
+        }
+        sliceObject(item, sliceAngle);
+        if (!activeRef.current) {
+          break;
+        }
+      }
+    };
+
+    const syncPointerTrail = () => {
+      const current = pointerPos.current;
+      if (!current.hasValue) {
+        prevPointerPos.current.hasValue = false;
+        return;
+      }
+
+      prevPointerPos.current.x = current.x;
+      prevPointerPos.current.y = current.y;
+      prevPointerPos.current.hasValue = true;
     };
 
     const handleMove = (event: PointerEvent) => {
-      const next = { x: event.clientX, y: event.clientY };
-      const previous = pointer.current;
+      pointerPos.current.x = event.clientX;
+      pointerPos.current.y = event.clientY;
+      pointerPos.current.hasValue = true;
       if (activeRef.current) lastActivity.current = performance.now();
-      if (activeRef.current && previous) {
-        objects.current.forEach((item) => {
-          if (
-            activeRef.current &&
-            !item.sliced &&
-            distanceToSegment(item.x, item.y, previous.x, previous.y, next.x, next.y) <= item.radius + 12
-          ) {
-            sliceObject(item, Math.atan2(next.y - previous.y, next.x - previous.x));
-          }
-        });
-      }
-      pointer.current = next;
     };
 
     const handleLeave = () => {
-      pointer.current = null;
+      pointerPos.current.hasValue = false;
+      prevPointerPos.current.hasValue = false;
     };
 
     const spawnWave = (time: number) => {
@@ -496,6 +542,7 @@ function FruitArcade() {
     };
 
     const drawFruit = (item: ArcadeObject) => {
+      if (item.sliced) return;
       context.save();
       context.translate(item.x, item.y);
       context.rotate(item.rotation);
@@ -608,32 +655,53 @@ function FruitArcade() {
         if (lastActivity.current && time - lastActivity.current > 20000) {
           activeRef.current = false;
           objects.current = [];
-          pointer.current = null;
+          splashes.current = [];
+          pointerPos.current.hasValue = false;
+          prevPointerPos.current.hasValue = false;
           setGameOver(true);
         }
         if (activeRef.current) {
+          processPointerCollisions();
           if (!lastSpawn || time - lastSpawn > 610) lastSpawn = spawnWave(time);
-          objects.current.forEach((item) => {
-            if (!item.sliced) {
-              item.x += item.vx * delta;
-              item.y += item.vy * delta;
-              item.vy += item.gravity * delta;
-              item.rotation += item.spin * delta;
+
+          const liveObjects = objects.current;
+          let writeIndex = 0;
+          for (let index = 0; index < liveObjects.length; index += 1) {
+            const item = liveObjects[index];
+            if (item.sliced || item.y >= height + 90) {
+              continue;
             }
-          });
-          objects.current = objects.current.filter((item) => !item.sliced && item.y < height + 90);
+            item.x += item.vx * delta;
+            item.y += item.vy * delta;
+            item.vy += item.gravity * delta;
+            item.rotation += item.spin * delta;
+            if (item.y < height + 90) {
+              liveObjects[writeIndex] = item;
+              writeIndex += 1;
+            }
+          }
+          liveObjects.length = writeIndex;
+
+          syncPointerTrail();
         }
       }
 
       marks.current.forEach(drawMark);
-      splashes.current.forEach((particle) => {
+      const liveSplashes = splashes.current;
+      let splashWriteIndex = 0;
+      for (let index = 0; index < liveSplashes.length; index += 1) {
+        const particle = liveSplashes[index];
         particle.x += particle.vx * delta;
         particle.y += particle.vy * delta;
         particle.vy += 0.18 * delta;
         particle.vx *= 0.985;
         particle.life -= 0.018 * delta;
-      });
-      splashes.current = splashes.current.filter((particle) => particle.life > 0);
+        if (particle.life > 0) {
+          liveSplashes[splashWriteIndex] = particle;
+          splashWriteIndex += 1;
+        }
+      }
+      liveSplashes.length = splashWriteIndex;
 
       objects.current.forEach(drawFruit);
       splashes.current.forEach((particle) => {
@@ -681,10 +749,12 @@ function FruitArcade() {
     objects.current = [];
     splashes.current = [];
     marks.current = [];
-    pointer.current = null;
+    pointerPos.current.hasValue = false;
+    prevPointerPos.current.hasValue = false;
     lastActivity.current = performance.now();
+    scoreRef.current = 0;
+    updateScoreLabel(0);
     setGameOver(false);
-    setScore(0);
     setActive(true);
   };
 
@@ -727,7 +797,7 @@ function FruitArcade() {
       >
         <Swords size={18} strokeWidth={1.35} />
         <span>{active ? 'EXIT' : 'DRAW THE BLADE'}</span>
-        <b>{String(score).padStart(2, '0')}</b>
+        <b ref={scoreLabelRef}>00</b>
       </BladeButton>
     </>
   );
