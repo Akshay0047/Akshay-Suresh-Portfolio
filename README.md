@@ -38,10 +38,8 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 ## Project structure
 
 ```
-artifacts/akshay-portfolio/   # Main portfolio app (Vite + React)
-lib/                          # Shared API and database packages
-artifacts/api-server/         # Express API server (optional)
-artifacts/mockup-sandbox/     # UI mockup sandbox (optional)
+akshay-portfolio/   # Main portfolio app (Vite + React)
+lib/                # Shared API and database packages
 ```
 
 ## Tech stack

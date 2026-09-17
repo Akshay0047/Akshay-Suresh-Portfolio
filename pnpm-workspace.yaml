@@ -28,7 +28,7 @@
 minimumReleaseAge: 1440
 
 packages:
-  - artifacts/*
+  - akshay-portfolio
   - lib/*
   - lib/integrations/*
   - scripts
