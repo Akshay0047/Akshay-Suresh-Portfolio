@@ -313,8 +313,27 @@
   background: linear-gradient(90deg, #73441f, var(--amber-bright));
 }
 
+.loading-track-pulse {
+  animation: loading-track-breathe 1.6s ease-in-out infinite;
+}
+
+.loading-fill-pulse {
+  animation: loading-fill-breathe 1.6s ease-in-out infinite;
+}
+
+@keyframes loading-track-breathe {
+  0%, 100% { opacity: 0.72; }
+  50% { opacity: 1; }
+}
+
+@keyframes loading-fill-breathe {
+  0%, 100% { opacity: 0.82; }
+  50% { opacity: 1; }
+}
+
+.loading-screen,
 .loading-screen.is-ready {
-  cursor: pointer;
+  cursor: none;
 }
 
 .loading-enter-prompt {

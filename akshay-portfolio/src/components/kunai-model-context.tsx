@@ -59,7 +59,6 @@ export function KunaiModelProvider({ children }: { children: ReactNode }) {
       setProgress(100);
       setLoaded(100);
       setReady(true);
-      console.log(`[3D Asset Loading]: ${src} complete (100/100)`);
     };
 
     element.addEventListener('progress', handleProgress as EventListener);

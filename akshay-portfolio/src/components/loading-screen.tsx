@@ -43,40 +43,44 @@ export function LoadingScreen({
   onComplete: () => void;
   onEnter?: () => void;
 }) {
-  const {
-    progress: kunaiProgress,
-    item: kunaiItem,
-    loaded: kunaiLoaded,
-    total: kunaiTotal,
-    ready: kunaiReady,
-  } = useKunaiModelProgress();
-  const [assetProgress, setAssetProgress] = useState(0);
+  const { progress: kunaiProgress } = useKunaiModelProgress();
+  const [displayProgress, setDisplayProgress] = useState(0);
   const [assetsReady, setAssetsReady] = useState(false);
+  const [loadingComplete, setLoadingComplete] = useState(false);
   const [isStriking, setIsStriking] = useState(false);
-  const [canEnter, setCanEnter] = useState(false);
   const strikingRef = useRef(false);
 
+  const isActuallyReady = assetsReady && kunaiProgress >= 100;
+  const isHoldingAtCap = displayProgress >= 95 && !isActuallyReady;
+  const progressLabel = Math.min(100, Math.round(displayProgress));
+
   useEffect(() => {
-    if (!kunaiItem) return;
-    console.log(`[3D Asset Loading]: ${kunaiItem} (${kunaiLoaded}/${kunaiTotal})`);
-  }, [kunaiItem, kunaiLoaded, kunaiTotal]);
+    const interval = window.setInterval(() => {
+      setDisplayProgress((prev) => {
+        if (prev >= 95) {
+          return prev;
+        }
+        return prev + 1;
+      });
+    }, 42);
+
+    return () => window.clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
 
-    console.log('[preload] Starting standard asset preload...');
-    preloadCoreAssets((percent) => {
+    preloadCoreAssets(() => {
       if (!mounted) return;
-      setAssetProgress(percent);
-      if (percent >= 100) {
+    })
+      .then(() => {
+        if (!mounted) return;
         setAssetsReady(true);
-      }
-    }).catch((error) => {
-      console.error('[preload] Asset preload failed:', error);
-      if (!mounted) return;
-      setAssetProgress(100);
-      setAssetsReady(true);
-    });
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setAssetsReady(true);
+      });
 
     return () => {
       mounted = false;
@@ -84,24 +88,19 @@ export function LoadingScreen({
   }, []);
 
   useEffect(() => {
-    if (assetsReady && kunaiReady && kunaiProgress >= 100) {
-      console.log('[preload] Loading screen ready — all assets and 3D model complete.');
-    }
-  }, [assetsReady, kunaiProgress, kunaiReady]);
+    if (!assetsReady || kunaiProgress < 100) return;
 
-  const displayProgress = Math.min(
-    100,
-    Math.round((assetProgress + kunaiProgress) / 2),
-  );
+    setDisplayProgress(100);
 
-  useEffect(() => {
-    if (assetsReady && kunaiReady && kunaiProgress >= 100) {
-      setCanEnter(true);
-    }
-  }, [assetsReady, kunaiProgress, kunaiReady]);
+    const timeout = window.setTimeout(() => {
+      setLoadingComplete(true);
+    }, 300);
+
+    return () => window.clearTimeout(timeout);
+  }, [assetsReady, kunaiProgress]);
 
   const handleEnter = () => {
-    if (!canEnter || strikingRef.current || displayProgress < 100 || !kunaiReady) return;
+    if (!loadingComplete || strikingRef.current || displayProgress < 100) return;
     onEnter?.();
     strikingRef.current = true;
     setIsStriking(true);
@@ -110,7 +109,7 @@ export function LoadingScreen({
 
   return (
     <motion.div
-      className={`loading-screen fixed inset-0 z-[100] ${isStriking ? 'is-striking' : ''} ${canEnter ? 'is-ready' : ''}`}
+      className={`loading-screen fixed inset-0 z-[100] cursor-none ${isStriking ? 'is-striking' : ''} ${loadingComplete ? 'is-ready' : ''}`}
       initial={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.42, ease: [0.23, 1, 0.32, 1] }}
@@ -123,7 +122,7 @@ export function LoadingScreen({
         }
       }}
       role="button"
-      tabIndex={canEnter ? 0 : -1}
+      tabIndex={loadingComplete ? 0 : -1}
     >
       <Particles count={24} />
       <div className="loading-vignette" />
@@ -137,16 +136,16 @@ export function LoadingScreen({
       <div className="loading-progress">
         <div className="loading-progress-label">
           <span>INITIALIZING ARCHIVE</span>
-          <span>{String(displayProgress).padStart(3, '0')}%</span>
+          <span>{String(progressLabel).padStart(3, '0')}%</span>
         </div>
-        <div className="loading-track">
+        <div className={`loading-track ${isHoldingAtCap ? 'loading-track-pulse' : ''}`}>
           <div
-            className="loading-fill"
-            style={{ transform: `scaleX(${displayProgress / 100})` }}
+            className={`loading-fill h-full transition-all duration-200 ease-out ${isHoldingAtCap ? 'loading-fill-pulse' : ''}`}
+            style={{ width: `${displayProgress}%` }}
           />
         </div>
-        {canEnter && !isStriking && (
-          <div className="loading-enter-prompt">CLICK TO ENTER</div>
+        {loadingComplete && !isStriking && (
+          <div className="loading-enter-prompt cursor-none">CLICK TO ENTER</div>
         )}
       </div>
     </motion.div>
