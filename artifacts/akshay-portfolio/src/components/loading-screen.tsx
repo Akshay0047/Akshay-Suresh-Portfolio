@@ -35,32 +35,27 @@ function Particles({ count = 28 }: { count?: number }) {
   );
 }
 
-const EXIT_BUFFER_MS = 360;
-
-export function LoadingScreen({ onComplete }: { onComplete: () => void }) {
+export function LoadingScreen({
+  onComplete,
+  onEnter,
+}: {
+  onComplete: () => void;
+  onEnter?: () => void;
+}) {
   const [progress, setProgress] = useState(0);
   const [isStriking, setIsStriking] = useState(false);
+  const [canEnter, setCanEnter] = useState(false);
   const strikingRef = useRef(false);
   const assetsReadyRef = useRef(false);
 
   useEffect(() => {
     let mounted = true;
-    const completionTimers: number[] = [];
-
-    const startStrike = () => {
-      if (!mounted || strikingRef.current || !assetsReadyRef.current) return;
-
-      strikingRef.current = true;
-      setIsStriking(true);
-      completionTimers.push(window.setTimeout(() => mounted && setProgress(100), 260));
-      completionTimers.push(window.setTimeout(() => mounted && onComplete(), 430));
-    };
 
     const scheduleExit = () => {
       if (!mounted || strikingRef.current) return;
       assetsReadyRef.current = true;
       setProgress(100);
-      completionTimers.push(window.setTimeout(() => mounted && startStrike(), EXIT_BUFFER_MS));
+      setCanEnter(true);
     };
 
     preloadCoreAssets((percent) => {
@@ -79,19 +74,36 @@ export function LoadingScreen({ onComplete }: { onComplete: () => void }) {
 
     return () => {
       mounted = false;
-      completionTimers.forEach((timer) => window.clearTimeout(timer));
     };
-  }, [onComplete]);
+  }, []);
 
   const displayProgress = Math.min(100, Math.round(progress));
 
+  const handleEnter = () => {
+    if (!canEnter || strikingRef.current || !assetsReadyRef.current) return;
+    onEnter?.();
+    strikingRef.current = true;
+    setIsStriking(true);
+    window.setTimeout(() => setProgress(100), 260);
+    window.setTimeout(() => onComplete(), 430);
+  };
+
   return (
     <motion.div
-      className={`loading-screen fixed inset-0 z-[100] ${isStriking ? 'is-striking' : ''}`}
+      className={`loading-screen fixed inset-0 z-[100] ${isStriking ? 'is-striking' : ''} ${canEnter ? 'is-ready' : ''}`}
       initial={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.42, ease: [0.23, 1, 0.32, 1] }}
       aria-label="Loading portfolio"
+      onClick={handleEnter}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          handleEnter();
+        }
+      }}
+      role="button"
+      tabIndex={canEnter ? 0 : -1}
     >
       <Particles count={24} />
       <div className="loading-vignette" />
@@ -115,6 +127,9 @@ export function LoadingScreen({ onComplete }: { onComplete: () => void }) {
             transition={{ duration: 0.12, ease: 'linear' }}
           />
         </div>
+        {canEnter && !isStriking && (
+          <div className="loading-enter-prompt">CLICK TO ENTER</div>
+        )}
       </div>
     </motion.div>
   );

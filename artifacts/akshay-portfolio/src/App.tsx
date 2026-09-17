@@ -195,12 +195,26 @@ function Crest({ small = false }: { small?: boolean }) {
 }
 
 function SwordCursor() {
+  const { isMotionEnabled } = useSound();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const cursorRef = useRef<HTMLSpanElement>(null);
   const trailPoints = useRef<Array<{ x: number; y: number; time: number }>>([]);
   const pointer = useRef({ x: -100, y: -100 });
   const visibleRef = useRef(false);
+  const motionEnabledRef = useRef(isMotionEnabled);
   const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    motionEnabledRef.current = isMotionEnabled;
+    if (!isMotionEnabled) {
+      trailPoints.current = [];
+      const canvas = canvasRef.current;
+      const context = canvas?.getContext('2d', { alpha: true });
+      if (canvas && context) {
+        context.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      }
+    }
+  }, [isMotionEnabled]);
 
   useEffect(() => {
     if (window.matchMedia('(hover: none), (pointer: coarse)').matches) return;
@@ -225,15 +239,17 @@ function SwordCursor() {
     const handleMove = (event: PointerEvent) => {
       const x = event.clientX;
       const y = event.clientY;
-      const last = trailPoints.current[trailPoints.current.length - 1];
-      if (last && Math.hypot(x - last.x, y - last.y) < 3) return;
       pointer.current = { x, y };
+      const last = trailPoints.current[trailPoints.current.length - 1];
+      if (motionEnabledRef.current && last && Math.hypot(x - last.x, y - last.y) < 3) return;
       if (!visibleRef.current) {
         visibleRef.current = true;
         setVisible(true);
       }
-      trailPoints.current.push({ x, y, time: performance.now() });
-      if (trailPoints.current.length > 16) trailPoints.current.shift();
+      if (motionEnabledRef.current) {
+        trailPoints.current.push({ x, y, time: performance.now() });
+        if (trailPoints.current.length > 16) trailPoints.current.shift();
+      }
       requestTrailFrame();
     };
     const handleLeave = () => {
@@ -250,6 +266,10 @@ function SwordCursor() {
       cursorElement.style.left = `${pointer.current.x}px`;
       cursorElement.style.top = `${pointer.current.y}px`;
       trailContext.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      if (!motionEnabledRef.current) {
+        if (points.length) requestTrailFrame();
+        return;
+      }
       if (points.length > 1) {
         trailContext.lineCap = 'round';
         trailContext.lineJoin = 'round';
@@ -281,7 +301,15 @@ function SwordCursor() {
     };
   }, []);
 
-  return <div className="sword-cursor-layer" aria-hidden="true"><canvas ref={canvasRef} className="sword-trail-canvas" /><span ref={cursorRef} className={`sword-cursor ${visible ? 'is-visible' : ''}`} /></div>;
+  return (
+    <div className="sword-cursor-layer" aria-hidden="true">
+      <canvas
+        ref={canvasRef}
+        className={`sword-trail-canvas ${isMotionEnabled ? '' : 'is-trail-hidden'}`}
+      />
+      <span ref={cursorRef} className={`sword-cursor ${visible ? 'is-visible' : ''}`} />
+    </div>
+  );
 }
 
 type ArcadeObject = {
@@ -816,7 +844,7 @@ function FruitArcade() {
 }
 
 function TitleScreen({ onContinue, onOptions }: { onContinue: () => void; onOptions: () => void }) {
-  const { playKanji } = useSound();
+  const { playKanji, isInputEnabled } = useSound();
   const [selected, setSelected] = useState(0);
   const [isOpenSaveMenu, setIsOpenSaveMenu] = useState(false);
   const [selectedSaveFile, setSelectedSaveFile] = useState<string | null>(null);
@@ -836,7 +864,7 @@ function TitleScreen({ onContinue, onOptions }: { onContinue: () => void; onOpti
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (isOpenSaveMenu || selectedSaveFile) return;
+      if (!isInputEnabled || isOpenSaveMenu || selectedSaveFile) return;
 
       if (event.key === 'ArrowDown' || event.key.toLowerCase() === 's') {
         event.preventDefault();
@@ -852,7 +880,7 @@ function TitleScreen({ onContinue, onOptions }: { onContinue: () => void; onOpti
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activateAction, isOpenSaveMenu, selected, selectedSaveFile, titleActions.length]);
+  }, [activateAction, isInputEnabled, isOpenSaveMenu, selected, selectedSaveFile, titleActions.length]);
 
   return (
     <motion.main
@@ -1025,9 +1053,11 @@ function ProjectPanel({
     setIsScrollOpen(false);
   }, [selectedProject]);
 
+  const { isInputEnabled } = useSound();
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key.toLowerCase() !== 'y') return;
+      if (!isInputEnabled || event.key.toLowerCase() !== 'y') return;
 
       const target = event.target;
       if (
@@ -1045,7 +1075,7 @@ function ProjectPanel({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [isInputEnabled]);
 
   return (
     <div className="content-panel project-panel flex h-full flex-col overflow-hidden">
@@ -1407,7 +1437,7 @@ function SignalPanel() {
 }
 
 function MainMenu({ onReturnToLanding }: { onReturnToLanding: () => void }) {
-  const { playKanji } = useSound();
+  const { playKanji, isInputEnabled } = useSound();
   const [menuIndex, setMenuIndex] = useState(0);
   const [projectIndex, setProjectIndex] = useState(0);
   const [topTab, setTopTab] = useState('EQUIPMENT');
@@ -1429,35 +1459,52 @@ function MainMenu({ onReturnToLanding }: { onReturnToLanding: () => void }) {
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'ArrowDown' || event.key.toLowerCase() === 's') {
+      if (!isInputEnabled) return;
+
+      const key = event.key.toLowerCase();
+
+      if (event.key === 'ArrowDown' || key === 's') {
         event.preventDefault();
         setMenuIndex((current) => (current + 1) % menuItems.length);
       }
-      if (event.key === 'ArrowUp' || event.key.toLowerCase() === 'w') {
+      if (event.key === 'ArrowUp' || key === 'w') {
         event.preventDefault();
         setMenuIndex((current) => (current - 1 + menuItems.length) % menuItems.length);
       }
-      if (event.key === 'ArrowRight' || event.key.toLowerCase() === 'd') {
-        if (activeMenu.id === 'projects') {
+      if (event.key === 'ArrowRight' || key === 'd') {
+        event.preventDefault();
+        if (activeMenu.id === 'projects' && topTab !== 'EQUIPMENT') {
           setProjectIndex((current) => {
             const next = (current + 1) % projects.length;
             playKanji();
             return next;
           });
+          return;
+        }
+        if (topTab === 'EQUIPMENT') {
+          setShowOptions(false);
+          setTopTab('INVENTORY');
+          playKanji();
         }
       }
-      if (event.key === 'ArrowLeft' || event.key.toLowerCase() === 'a') {
-        if (activeMenu.id === 'projects') {
+      if (event.key === 'ArrowLeft' || key === 'a') {
+        event.preventDefault();
+        if (activeMenu.id === 'projects' && topTab !== 'EQUIPMENT') {
           setProjectIndex((current) => {
             const next = (current - 1 + projects.length) % projects.length;
             playKanji();
             return next;
           });
+          return;
+        }
+        if (topTab === 'INVENTORY') {
+          setShowOptions(false);
+          setTopTab('EQUIPMENT');
+          playKanji();
         }
       }
       if (event.key === 'Escape') {
         setShowOptions(false);
-        setTopTab('INVENTORY');
       }
       if (event.key === 'Enter' && activeMenu.id === 'signal') {
         window.location.href = 'mailto:akshay47suresh@gmail.com';
@@ -1465,7 +1512,7 @@ function MainMenu({ onReturnToLanding }: { onReturnToLanding: () => void }) {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeMenu.id, playKanji]);
+  }, [activeMenu.id, isInputEnabled, playKanji, topTab]);
 
   return (
     <main className="game-screen">
@@ -1481,7 +1528,6 @@ function MainMenu({ onReturnToLanding }: { onReturnToLanding: () => void }) {
               className={topTab === tab ? 'active' : ''}
               onClick={() => {
                 if (tab === 'OPTIONS') {
-                  setTopTab('OPTIONS');
                   setShowOptions(true);
                 } else {
                   setShowOptions(false);
@@ -1494,7 +1540,7 @@ function MainMenu({ onReturnToLanding }: { onReturnToLanding: () => void }) {
             </button>
           ))}
         </div>
-        <button className="edge-control" type="button" onClick={() => { setTopTab('OPTIONS'); setShowOptions(true); }}>R1 <ArrowRight size={14} /></button>
+        <button className="edge-control" type="button" onClick={() => setShowOptions(true)}>R1 <ArrowRight size={14} /></button>
       </header>
 
       <div className={`game-body ${topTab === 'EQUIPMENT' ? 'is-equipment-view' : ''}`}>
@@ -1545,15 +1591,12 @@ function MainMenu({ onReturnToLanding }: { onReturnToLanding: () => void }) {
 
       <AnimatePresence>
         {showOptions && (
-           <motion.div className="options-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setShowOptions(false); setTopTab('INVENTORY'); }}>
+           <motion.div className="options-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowOptions(false)}>
            <motion.div className="options-panel" initial={{ y: 12 }} animate={{ y: 0 }} onClick={(event) => event.stopPropagation()}>
-              <div className="panel-topline"><span>OPTIONS</span><button type="button" onClick={() => { setShowOptions(false); setTopTab('INVENTORY'); }} aria-label="Close options"><X size={17} /></button></div>
-              <div className="option-row"><span>INTERFACE</span><b>GAME MENU</b><Check size={15} /></div>
-              <div className="option-row"><span>MOTION</span><b>ENABLED</b><Check size={15} /></div>
-              <div className="option-row"><span>INPUT</span><b>WASD / ARROWS</b><Check size={15} /></div>
+              <div className="panel-topline"><span>OPTIONS</span><button type="button" onClick={() => setShowOptions(false)} aria-label="Close options"><X size={17} /></button></div>
               <SettingsOptionsPanel />
               <div className="options-actions">
-                <BladeButton className="game-action-button primary close-options" type="button" onClick={() => { setShowOptions(false); setTopTab('INVENTORY'); }}>RETURN TO MENU</BladeButton>
+                <BladeButton className="game-action-button primary close-options" type="button" onClick={() => setShowOptions(false)}>RETURN TO MENU</BladeButton>
                 <button className="game-action-button close-options" type="button" onClick={onReturnToLanding}>RETURN TO LANDING</button>
               </div>
             </motion.div>
@@ -1604,7 +1647,7 @@ function Home() {
         </AnimatePresence>
       </div>
       {!isLoading && <AssetWarmup />}
-      <AnimatePresence>{isLoading && <LoadingScreen key="loading" onComplete={completeLoading} />}</AnimatePresence>
+      <AnimatePresence>{isLoading && <LoadingScreen key="loading" onComplete={completeLoading} onEnter={startMusic} />}</AnimatePresence>
     </div>
   );
 }

@@ -313,6 +313,31 @@
   background: linear-gradient(90deg, #73441f, var(--amber-bright));
 }
 
+.loading-screen.is-ready {
+  cursor: pointer;
+}
+
+.loading-enter-prompt {
+  margin-top: 14px;
+  color: var(--amber-pale);
+  font-family: var(--app-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.28em;
+  text-align: center;
+  animation: loading-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes loading-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
 .katana-slash {
   position: absolute;
   top: 50%;
@@ -1499,8 +1524,12 @@ kbd {
   border: 0;
   background: transparent;
   text-align: left;
-  cursor: pointer;
+  cursor: default;
   transition: color 0.2s ease;
+}
+
+.option-row-toggle {
+  cursor: default;
 }
 
 .option-row-button:hover {
@@ -2959,6 +2988,10 @@ kbd {
   height: 100%;
   pointer-events: none;
   mix-blend-mode: screen;
+}
+
+.sword-trail-canvas.is-trail-hidden {
+  opacity: 0;
 }
 
 .sword-cursor {
