@@ -303,7 +303,7 @@ function SwordCursor() {
   }, []);
 
   return (
-    <div className="sword-cursor-layer" aria-hidden="true">
+    <div className="sword-cursor-layer pointer-events-none z-[99999]" aria-hidden="true">
       <canvas
         ref={canvasRef}
         className={`sword-trail-canvas ${isMotionEnabled ? '' : 'is-trail-hidden'}`}
@@ -1635,8 +1635,10 @@ function Home() {
   }, [startMusic]);
   return (
     <div className="portfolio-app">
-      <div className="portfolio-ui relative z-10 h-full min-h-0 bg-transparent">
-        <SwordCursor />
+      <div
+        className={`portfolio-ui relative z-10 h-full min-h-0 bg-transparent ${isLoading ? 'pointer-events-none opacity-0' : 'opacity-100'}`}
+        aria-hidden={isLoading}
+      >
         <AnimatePresence mode="wait">
           {screen === 'title' && !openTitleOptions && (
             <TitleScreen key="title" onContinue={enterPortfolio} onOptions={() => setOpenTitleOptions(true)} />
@@ -1662,7 +1664,7 @@ function Home() {
           )}
         </AnimatePresence>
       </div>
-      {!isLoading && <AssetWarmup />}
+      <AssetWarmup />
       <AnimatePresence>{isLoading && <LoadingScreen key="loading" onComplete={completeLoading} onEnter={startMusic} />}</AnimatePresence>
     </div>
   );
@@ -1719,6 +1721,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <CreditsProvider>
         <SoundProvider>
+          <SwordCursor />
           <TooltipProvider>
             <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
               <BrightnessShell>

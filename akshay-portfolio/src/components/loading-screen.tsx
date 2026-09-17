@@ -1,6 +1,5 @@
 import { motion } from 'framer-motion';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { preloadSoundAssets } from '@/components/sound-context';
 import { preloadCoreAssets } from '@/lib/preload-assets';
 
 function Particles({ count = 28 }: { count?: number }) {
@@ -47,35 +46,22 @@ export function LoadingScreen({
   const [isStriking, setIsStriking] = useState(false);
   const [canEnter, setCanEnter] = useState(false);
   const strikingRef = useRef(false);
-  const assetsReadyRef = useRef(false);
-
-  useEffect(() => {
-    preloadSoundAssets();
-  }, []);
 
   useEffect(() => {
     let mounted = true;
 
-    const scheduleExit = () => {
-      if (!mounted || strikingRef.current) return;
-      assetsReadyRef.current = true;
-      setProgress(100);
-      setCanEnter(true);
-    };
-
     preloadCoreAssets((percent) => {
       if (!mounted) return;
       setProgress(percent);
-    })
-      .then(() => {
-        if (!mounted) return;
-        scheduleExit();
-      })
-      .catch((error) => {
-        console.error('[preload] Asset preload failed:', error);
-        if (!mounted) return;
-        scheduleExit();
-      });
+      if (percent >= 100) {
+        setCanEnter(true);
+      }
+    }).catch((error) => {
+      console.error('[preload] Asset preload failed:', error);
+      if (!mounted) return;
+      setProgress(100);
+      setCanEnter(true);
+    });
 
     return () => {
       mounted = false;
@@ -85,11 +71,10 @@ export function LoadingScreen({
   const displayProgress = Math.min(100, Math.round(progress));
 
   const handleEnter = () => {
-    if (!canEnter || strikingRef.current || !assetsReadyRef.current) return;
+    if (!canEnter || strikingRef.current || displayProgress < 100) return;
     onEnter?.();
     strikingRef.current = true;
     setIsStriking(true);
-    window.setTimeout(() => setProgress(100), 260);
     window.setTimeout(() => onComplete(), 430);
   };
 
@@ -125,11 +110,9 @@ export function LoadingScreen({
           <span>{String(displayProgress).padStart(3, '0')}%</span>
         </div>
         <div className="loading-track">
-          <motion.div
+          <div
             className="loading-fill"
-            initial={{ scaleX: 0 }}
-            animate={{ scaleX: displayProgress / 100 }}
-            transition={{ duration: 0.12, ease: 'linear' }}
+            style={{ transform: `scaleX(${displayProgress / 100})` }}
           />
         </div>
         {canEnter && !isStriking && (

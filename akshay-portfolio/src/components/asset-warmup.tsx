@@ -8,10 +8,10 @@ export function AssetWarmup() {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none fixed -left-[9999px] top-0 -z-50 opacity-0"
-      style={{ width: 1, height: 1, overflow: 'hidden' }}
+      className="pointer-events-none fixed inset-0 -z-10 opacity-0"
+      style={{ visibility: 'hidden' }}
     >
-      <img src={portraitSrc} alt="" width={420} height={620} decoding="async" />
+      <img src={portraitSrc} alt="" width={420} height={620} decoding="async" fetchPriority="high" />
       <model-viewer
         src={kunaiSrc}
         shadow-intensity="1"

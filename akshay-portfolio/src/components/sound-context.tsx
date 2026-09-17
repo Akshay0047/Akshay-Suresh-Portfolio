@@ -23,7 +23,7 @@ const assetBase = import.meta.env.BASE_URL.replace(/\/$/, '');
 const COMPACT_SLIDER_CLASS =
   'w-48 appearance-none h-1 bg-[#141210] border border-[#2a241d] outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5 [&::-webkit-slider-thumb]:bg-[#b8976a] [&::-webkit-slider-thumb]:rotate-45 [&::-webkit-slider-thumb]:cursor-pointer hover:[&::-webkit-slider-thumb]:bg-[#e8d4b4]';
 
-const PORTFOLIO_AUDIO_FILES = [
+export const PORTFOLIO_AUDIO_FILES = [
   'main-menu-theme.mp3',
   'sekiro_kanji.mp3',
   'swordslice.mp3',
@@ -34,12 +34,37 @@ function resolveSound(path: string) {
   return `${assetBase}/${path.replace(/^\//, '')}`;
 }
 
-export function preloadSoundAssets() {
-  PORTFOLIO_AUDIO_FILES.forEach((file) => {
-    const audio = new Audio(resolveSound(file));
-    audio.preload = 'auto';
-    audio.load();
-  });
+export function preloadSoundAssets(): Promise<void> {
+  return Promise.all(
+    PORTFOLIO_AUDIO_FILES.map(
+      (file) =>
+        new Promise<void>((resolve, reject) => {
+          const audio = new Audio(resolveSound(file));
+          audio.preload = 'auto';
+
+          const finish = () => {
+            cleanup();
+            resolve();
+          };
+
+          const fail = () => {
+            cleanup();
+            reject(new Error(`Failed to preload audio ${file}`));
+          };
+
+          const cleanup = () => {
+            audio.removeEventListener('canplaythrough', finish);
+            audio.removeEventListener('loadeddata', finish);
+            audio.removeEventListener('error', fail);
+          };
+
+          audio.addEventListener('canplaythrough', finish, { once: true });
+          audio.addEventListener('loadeddata', finish, { once: true });
+          audio.addEventListener('error', fail, { once: true });
+          audio.load();
+        }),
+    ),
+  ).then(() => undefined);
 }
 
 function readVolume(key: string, fallback: number) {
