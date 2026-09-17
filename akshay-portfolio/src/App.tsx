@@ -560,7 +560,7 @@ function FruitArcade() {
     const spawnWave = (time: number) => {
       const spawnCount = Math.random() > 0.5 ? 3 : 2;
       for (let index = 0; index < spawnCount; index += 1) {
-        const kind = index === 1 ? 'bomb' : 'fruit';
+        const kind = Math.random() < 0.08 ? 'bomb' : 'fruit';
         const radius = kind === 'bomb' ? 22 : 25 + Math.random() * 5;
         const colors = ['#cb5b36', '#d89c35', '#ba4435', '#d6b04a'];
         objects.current.push({
@@ -587,28 +587,41 @@ function FruitArcade() {
       context.translate(item.x, item.y);
       context.rotate(item.rotation);
       if (item.kind === 'bomb') {
+        const radius = item.radius;
+        const fuseEndX = 20;
+        const fuseEndY = -radius - 10;
+
         context.beginPath();
-        context.arc(0, 0, item.radius, 0, Math.PI * 2);
-        context.fillStyle = '#191817';
-        context.fill();
-        context.lineWidth = 2;
-        context.strokeStyle = '#d59b58';
+        context.moveTo(0, -radius);
+        context.quadraticCurveTo(10, -radius - 15, fuseEndX, fuseEndY);
+        context.strokeStyle = '#8B4513';
+        context.lineWidth = 3;
         context.stroke();
+
+        const sparkFlicker = Math.random() > 0.5 ? 4 : 6;
         context.beginPath();
-        context.arc(-6, -7, 4, 0, Math.PI * 2);
-        context.fillStyle = 'rgba(255, 241, 201, 0.58)';
+        context.arc(fuseEndX, fuseEndY, sparkFlicker, 0, Math.PI * 2);
+        context.fillStyle = '#FFA500';
         context.fill();
         context.beginPath();
-        context.moveTo(6, -18);
-        context.quadraticCurveTo(15, -29, 21, -20);
-        context.strokeStyle = '#c2803e';
-        context.lineWidth = 2;
-        context.stroke();
+        context.arc(fuseEndX, fuseEndY, sparkFlicker / 2, 0, Math.PI * 2);
+        context.fillStyle = '#FFFF00';
+        context.fill();
+
+        const gradient = context.createRadialGradient(
+          -radius * 0.3,
+          -radius * 0.3,
+          radius * 0.1,
+          0,
+          0,
+          radius,
+        );
+        gradient.addColorStop(0, '#555555');
+        gradient.addColorStop(0.3, '#111111');
+        gradient.addColorStop(1, '#000000');
         context.beginPath();
-        context.arc(23, -19, 3, 0, Math.PI * 2);
-        context.fillStyle = '#fff2bf';
-        context.shadowColor = '#fff2bf';
-        context.shadowBlur = 12;
+        context.arc(0, 0, radius, 0, Math.PI * 2);
+        context.fillStyle = gradient;
         context.fill();
       } else {
         const gradient = context.createRadialGradient(-8, -10, 2, 0, 0, item.radius);
