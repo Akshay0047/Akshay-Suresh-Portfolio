@@ -7,7 +7,7 @@ import { useKunaiModelProgress } from '@/components/kunai-model-context';
 import { preloadKunaiModel } from '@/lib/preload-assets';
 
 const assetBase = import.meta.env.BASE_URL.replace(/\/$/, '');
-const portraitSrc = `${assetBase}/portrait.jpg`;
+const portraitSrc = `${assetBase}/portrait.webp`;
 export const kunaiSrc = `${assetBase}/kunai.glb`;
 
 type LoadoutSlot = {

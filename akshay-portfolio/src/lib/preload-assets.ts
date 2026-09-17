@@ -3,7 +3,7 @@ import '@google/model-viewer';
 const assetBase = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 /** Critical assets only — everything else loads on demand. */
-export const CORE_IMAGE_PATHS = ['portrait.jpg'] as const;
+export const CORE_IMAGE_PATHS = ['portrait.webp'] as const;
 export const CORE_AUDIO_PATHS = ['sekiro_kanji.mp3'] as const;
 
 const imageCache = new Map<string, HTMLImageElement>();
