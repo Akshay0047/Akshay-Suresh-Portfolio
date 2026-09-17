@@ -1466,9 +1466,8 @@ function MainMenu({ onReturnToLanding }: { onReturnToLanding: () => void }) {
   }, [playKanji]);
 
   const selectProject = useCallback((index: number) => {
-    playKanji();
     setProjectIndex(index);
-  }, [playKanji]);
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {

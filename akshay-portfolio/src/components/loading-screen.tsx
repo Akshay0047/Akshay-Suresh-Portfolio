@@ -43,7 +43,13 @@ export function LoadingScreen({
   onComplete: () => void;
   onEnter?: () => void;
 }) {
-  const { progress: kunaiProgress, ready: kunaiReady } = useKunaiModelProgress();
+  const {
+    progress: kunaiProgress,
+    item: kunaiItem,
+    loaded: kunaiLoaded,
+    total: kunaiTotal,
+    ready: kunaiReady,
+  } = useKunaiModelProgress();
   const [assetProgress, setAssetProgress] = useState(0);
   const [assetsReady, setAssetsReady] = useState(false);
   const [isStriking, setIsStriking] = useState(false);
@@ -51,8 +57,14 @@ export function LoadingScreen({
   const strikingRef = useRef(false);
 
   useEffect(() => {
+    if (!kunaiItem) return;
+    console.log(`[3D Asset Loading]: ${kunaiItem} (${kunaiLoaded}/${kunaiTotal})`);
+  }, [kunaiItem, kunaiLoaded, kunaiTotal]);
+
+  useEffect(() => {
     let mounted = true;
 
+    console.log('[preload] Starting standard asset preload...');
     preloadCoreAssets((percent) => {
       if (!mounted) return;
       setAssetProgress(percent);
@@ -70,6 +82,12 @@ export function LoadingScreen({
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (assetsReady && kunaiReady && kunaiProgress >= 100) {
+      console.log('[preload] Loading screen ready — all assets and 3D model complete.');
+    }
+  }, [assetsReady, kunaiProgress, kunaiReady]);
 
   const displayProgress = Math.min(
     100,
