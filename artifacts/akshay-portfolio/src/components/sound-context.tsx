@@ -23,8 +23,23 @@ const assetBase = import.meta.env.BASE_URL.replace(/\/$/, '');
 const COMPACT_SLIDER_CLASS =
   'w-48 appearance-none h-1 bg-[#141210] border border-[#2a241d] outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5 [&::-webkit-slider-thumb]:bg-[#b8976a] [&::-webkit-slider-thumb]:rotate-45 [&::-webkit-slider-thumb]:cursor-pointer hover:[&::-webkit-slider-thumb]:bg-[#e8d4b4]';
 
+const PORTFOLIO_AUDIO_FILES = [
+  'main-menu-theme.mp3',
+  'sekiro_kanji.mp3',
+  'swordslice.mp3',
+  'death.mp3',
+] as const;
+
 function resolveSound(path: string) {
   return `${assetBase}/${path.replace(/^\//, '')}`;
+}
+
+export function preloadSoundAssets() {
+  PORTFOLIO_AUDIO_FILES.forEach((file) => {
+    const audio = new Audio(resolveSound(file));
+    audio.preload = 'auto';
+    audio.load();
+  });
 }
 
 function readVolume(key: string, fallback: number) {
@@ -82,6 +97,7 @@ type SoundContextValue = {
   playKanji: () => void;
   playSlice: () => void;
   playDeath: () => void;
+  stopDeath: () => void;
 };
 
 const SoundContext = createContext<SoundContextValue | null>(null);
@@ -259,6 +275,17 @@ export function SoundProvider({ children }: { children: ReactNode }) {
     }
   }, [isSoundEnabled, sfxVolume]);
 
+  const stopDeath = useCallback(() => {
+    const source = deathAudioRef.current;
+    if (!source) return;
+    try {
+      source.pause();
+      source.currentTime = 0;
+    } catch {
+      // Silent fallback for environments that block audio setup.
+    }
+  }, []);
+
   const value = useMemo(
     () => ({
       isSoundEnabled,
@@ -279,6 +306,7 @@ export function SoundProvider({ children }: { children: ReactNode }) {
       playKanji,
       playSlice,
       playDeath,
+      stopDeath,
     }),
     [
       isSoundEnabled,
@@ -299,6 +327,7 @@ export function SoundProvider({ children }: { children: ReactNode }) {
       playKanji,
       playSlice,
       playDeath,
+      stopDeath,
     ],
   );
 

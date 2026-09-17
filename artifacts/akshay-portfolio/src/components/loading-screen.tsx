@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { preloadSoundAssets } from '@/components/sound-context';
 import { preloadCoreAssets } from '@/lib/preload-assets';
 
 function Particles({ count = 28 }: { count?: number }) {
@@ -47,6 +48,10 @@ export function LoadingScreen({
   const [canEnter, setCanEnter] = useState(false);
   const strikingRef = useRef(false);
   const assetsReadyRef = useRef(false);
+
+  useEffect(() => {
+    preloadSoundAssets();
+  }, []);
 
   useEffect(() => {
     let mounted = true;
