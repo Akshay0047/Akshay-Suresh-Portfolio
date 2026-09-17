@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { type MouseEvent, type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AnimatePresence, motion, useReducedMotion, useScroll, useSpring } from 'framer-motion';
 import {
@@ -885,15 +885,29 @@ function TitleScreen({ onContinue, onOptions }: { onContinue: () => void; onOpti
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!isInputEnabled || isOpenSaveMenu || selectedSaveFile) return;
 
-      if (event.key === 'ArrowDown' || event.key.toLowerCase() === 's') {
+      const key = event.key.toLowerCase();
+      const isNavigateKey =
+        event.key === 'ArrowDown' ||
+        event.key === 'ArrowUp' ||
+        key === 's' ||
+        key === 'w';
+
+      if (isNavigateKey) {
         event.preventDefault();
-        setSelected((current) => (current + 1) % titleActions.length);
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
+        if (event.key === 'ArrowDown' || key === 's') {
+          setSelected((current) => (current + 1) % titleActions.length);
+        }
+        if (event.key === 'ArrowUp' || key === 'w') {
+          setSelected((current) => (current - 1 + titleActions.length) % titleActions.length);
+        }
+        return;
       }
-      if (event.key === 'ArrowUp' || event.key.toLowerCase() === 'w') {
-        event.preventDefault();
-        setSelected((current) => (current - 1 + titleActions.length) % titleActions.length);
-      }
+
       if (event.key === 'Enter') {
+        event.preventDefault();
         activateAction(selected);
       }
     };
@@ -926,7 +940,9 @@ function TitleScreen({ onContinue, onOptions }: { onContinue: () => void; onOpti
             <button
               className={`title-action ${selected === index ? 'is-selected' : ''}`}
               type="button"
+              tabIndex={-1}
               key={action.label}
+              onMouseDown={preventMouseFocus}
               onClick={() => {
                 setSelected(index);
                 activateAction(index);
@@ -958,6 +974,10 @@ function TitleScreen({ onContinue, onOptions }: { onContinue: () => void; onOpti
   );
 }
 
+function preventMouseFocus(event: MouseEvent<HTMLButtonElement>) {
+  event.preventDefault();
+}
+
 function MenuButton({
   item,
   selected,
@@ -971,6 +991,8 @@ function MenuButton({
     <button
       className={`game-menu-button ${selected ? 'is-selected' : ''}`}
       type="button"
+      tabIndex={-1}
+      onMouseDown={preventMouseFocus}
       onClick={onSelect}
       aria-current={selected}
       data-testid={`button-menu-${item.id}`}
@@ -1487,15 +1509,34 @@ function MainMenu({ onReturnToLanding }: { onReturnToLanding: () => void }) {
       if (!isInputEnabled) return;
 
       const key = event.key.toLowerCase();
+      const isMenuNavigateKey =
+        event.key === 'ArrowDown' ||
+        event.key === 'ArrowUp' ||
+        key === 's' ||
+        key === 'w';
 
-      if (event.key === 'ArrowDown' || key === 's') {
+      if (isMenuNavigateKey) {
         event.preventDefault();
-        setMenuIndex((current) => (current + 1) % menuItems.length);
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
+        if (event.key === 'ArrowDown' || key === 's') {
+          setMenuIndex((current) => (current + 1) % menuItems.length);
+        }
+        if (event.key === 'ArrowUp' || key === 'w') {
+          setMenuIndex((current) => (current - 1 + menuItems.length) % menuItems.length);
+        }
+        return;
       }
-      if (event.key === 'ArrowUp' || key === 'w') {
+
+      if (event.key === 'Enter') {
         event.preventDefault();
-        setMenuIndex((current) => (current - 1 + menuItems.length) % menuItems.length);
+        if (activeMenu.id === 'signal') {
+          window.location.href = 'mailto:akshay47suresh@gmail.com';
+        }
+        return;
       }
+
       if (event.key === 'ArrowRight' || key === 'd') {
         event.preventDefault();
         if (activeMenu.id === 'projects' && topTab !== 'EQUIPMENT') {
@@ -1530,9 +1571,6 @@ function MainMenu({ onReturnToLanding }: { onReturnToLanding: () => void }) {
       }
       if (event.key === 'Escape') {
         setShowOptions(false);
-      }
-      if (event.key === 'Enter' && activeMenu.id === 'signal') {
-        window.location.href = 'mailto:akshay47suresh@gmail.com';
       }
     };
     window.addEventListener('keydown', handleKeyDown);
