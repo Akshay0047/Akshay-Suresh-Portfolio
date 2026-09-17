@@ -109,7 +109,7 @@ export function LoadingScreen({
 
   return (
     <motion.div
-      className={`loading-screen fixed inset-0 z-[100] cursor-none ${isStriking ? 'is-striking' : ''} ${loadingComplete ? 'is-ready' : ''}`}
+      className={`loading-screen fixed inset-0 z-[100] ${isStriking ? 'is-striking' : ''} ${loadingComplete ? 'is-ready' : ''}`}
       initial={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.42, ease: [0.23, 1, 0.32, 1] }}
@@ -145,7 +145,7 @@ export function LoadingScreen({
           />
         </div>
         {loadingComplete && !isStriking && (
-          <div className="loading-enter-prompt cursor-none">CLICK TO ENTER</div>
+          <div className="loading-enter-prompt">CLICK TO ENTER</div>
         )}
       </div>
     </motion.div>

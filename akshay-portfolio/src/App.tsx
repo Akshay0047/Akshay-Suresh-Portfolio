@@ -1136,7 +1136,7 @@ function ProjectPanel({
 
                 <button
                   type="button"
-                  className="mt-4 flex w-fit shrink-0 cursor-pointer items-center gap-3 text-sm text-[#a3907c] uppercase tracking-widest transition-colors hover:text-[#e8d4b4]"
+                  className="mt-4 flex w-fit shrink-0 items-center gap-3 text-sm text-[#a3907c] uppercase tracking-widest transition-colors hover:text-[#e8d4b4]"
                   onClick={() => setIsScrollOpen((prev) => !prev)}
                 >
                   <span className="flex h-6 min-w-6 items-center justify-center rounded border border-[#4a3b2c] bg-[#141210] px-2 text-xs leading-none">Y</span>

@@ -21,7 +21,7 @@ const BRIGHTNESS_KEY = 'portfolio-brightness';
 const assetBase = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 const COMPACT_SLIDER_CLASS =
-  'w-48 appearance-none h-1 bg-[#141210] border border-[#2a241d] outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5 [&::-webkit-slider-thumb]:bg-[#b8976a] [&::-webkit-slider-thumb]:rotate-45 [&::-webkit-slider-thumb]:cursor-pointer hover:[&::-webkit-slider-thumb]:bg-[#e8d4b4]';
+  'w-48 appearance-none h-1 bg-[#141210] border border-[#2a241d] outline-none [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5 [&::-webkit-slider-thumb]:bg-[#b8976a] [&::-webkit-slider-thumb]:rotate-45 hover:[&::-webkit-slider-thumb]:bg-[#e8d4b4]';
 
 export const PORTFOLIO_AUDIO_FILES = [
   'main-menu-theme.mp3',
@@ -391,7 +391,7 @@ export function InterfaceOption() {
   return (
     <div className="option-row">
       <span>INTERFACE</span>
-      <div className="relative group col-span-2 flex cursor-default items-center justify-end gap-3">
+      <div className="relative group col-span-2 flex items-center justify-end gap-3">
         <b>GAME MENU</b>
         <Check size={15} />
         <span className="absolute -top-6 right-0 w-max text-[#b8976a] text-xs font-serif tracking-normal opacity-0 group-hover:opacity-100 transition-all duration-500 blur-sm group-hover:blur-none">

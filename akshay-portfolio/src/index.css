@@ -23,7 +23,13 @@
 
 @layer base {
   * {
+    cursor: none !important;
     box-sizing: border-box;
+  }
+
+  input[type='range']::-webkit-slider-thumb,
+  input[type='range']::-moz-range-thumb {
+    cursor: none !important;
   }
 
   html {
@@ -67,10 +73,6 @@
   button,
   a {
     -webkit-tap-highlight-color: transparent;
-  }
-
-  button {
-    cursor: pointer;
   }
 
   ::selection {
@@ -331,11 +333,6 @@
   50% { opacity: 1; }
 }
 
-.loading-screen,
-.loading-screen.is-ready {
-  cursor: none;
-}
-
 .loading-enter-prompt {
   margin-top: 14px;
   color: var(--amber-pale);
@@ -445,14 +442,6 @@
   }
   100% {
     opacity: 0;
-  }
-}
-
-@media (hover: hover) and (pointer: fine) {
-  body,
-  button,
-  a {
-    cursor: none;
   }
 }
 
@@ -1494,7 +1483,6 @@ kbd {
   letter-spacing: 0.2em;
   text-transform: uppercase;
   opacity: 0.4;
-  cursor: default;
   transition: opacity 0.3s ease, color 0.3s ease;
 }
 
@@ -1568,12 +1556,7 @@ kbd {
   border: 0;
   background: transparent;
   text-align: left;
-  cursor: default;
   transition: color 0.2s ease;
-}
-
-.option-row-toggle {
-  cursor: default;
 }
 
 .option-row-button:hover {
@@ -3163,10 +3146,6 @@ kbd {
   gap: 9px;
   margin-top: 25px;
   animation: death-controls-in 1.2s 0.72s ease-out both;
-}
-
-.fruit-death-actions button {
-  cursor: pointer;
 }
 
 .fruit-death-actions button:hover,
