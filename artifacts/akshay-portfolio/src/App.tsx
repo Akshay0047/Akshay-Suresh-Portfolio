@@ -28,6 +28,7 @@ import {
   ROD_OFFSET_LORE,
 } from '@/components/load-profile';
 import { LoadingScreen } from '@/components/loading-screen';
+import { CreditsButton, CreditsProvider } from '@/components/credits';
 import { BrightnessShell, SettingsOptionsPanel, SoundProvider, useSound } from '@/components/sound-context';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
@@ -924,7 +925,14 @@ function TitleScreen({ onContinue, onOptions }: { onContinue: () => void; onOpti
           ))}
         </nav>
       </div>
-      <div className="title-footer"><span><kbd>W</kbd><kbd>S</kbd> SELECT</span><span><kbd>ENTER</kbd> CONFIRM</span><span>© 2026 AKSHAY SURESH</span></div>
+      <div className="title-footer">
+        <span><kbd>W</kbd><kbd>S</kbd> SELECT</span>
+        <span><kbd>ENTER</kbd> CONFIRM</span>
+        <span className="title-footer-end">
+          <span>© 2026 AKSHAY SURESH</span>
+          <CreditsButton />
+        </span>
+      </div>
 
       <LoadProfileExperience
         isOpenSaveMenu={isOpenSaveMenu}
@@ -1589,7 +1597,10 @@ function MainMenu({ onReturnToLanding }: { onReturnToLanding: () => void }) {
           <span><kbd>ENTER</kbd> SELECT</span>
           <span><kbd>ESC</kbd> BACK</span>
         </div>
-        <div className="footer-status"><ShieldCheck size={14} /> SYSTEM READY <span>© 2026 AS</span></div>
+        <div className="footer-status">
+          <ShieldCheck size={14} /> SYSTEM READY <span>© 2026 AS</span>
+          <CreditsButton />
+        </div>
       </footer>
 
       <FruitArcade />
@@ -1706,19 +1717,21 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <SoundProvider>
-        <TooltipProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-            <BrightnessShell>
-              <Atmosphere />
-              <div className="app-shell relative z-10 h-full min-h-0 bg-transparent">
-                <Router />
-              </div>
-            </BrightnessShell>
-          </WouterRouter>
-          <Toaster />
-        </TooltipProvider>
-      </SoundProvider>
+      <CreditsProvider>
+        <SoundProvider>
+          <TooltipProvider>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+              <BrightnessShell>
+                <Atmosphere />
+                <div className="app-shell relative z-10 h-full min-h-0 bg-transparent">
+                  <Router />
+                </div>
+              </BrightnessShell>
+            </WouterRouter>
+            <Toaster />
+          </TooltipProvider>
+        </SoundProvider>
+      </CreditsProvider>
     </QueryClientProvider>
   );
 }

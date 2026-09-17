@@ -1465,6 +1465,31 @@ kbd {
   color: var(--dimmer);
 }
 
+.credits-trigger {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--dimmer);
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  opacity: 0.4;
+  cursor: default;
+  transition: opacity 0.3s ease, color 0.3s ease;
+}
+
+.credits-trigger:hover {
+  opacity: 1;
+  color: var(--amber-pale);
+}
+
+.title-footer-end {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .options-overlay {
   position: fixed;
   inset: 0;
