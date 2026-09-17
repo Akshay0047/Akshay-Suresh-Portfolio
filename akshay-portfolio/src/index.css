@@ -334,24 +334,17 @@
 }
 
 .loading-enter-prompt {
-  margin-top: 14px;
-  color: var(--amber-pale);
-  font-family: var(--app-font-mono);
-  font-size: 9px;
-  letter-spacing: 0.28em;
+  margin-bottom: 24px;
+  color: #f0d2a0;
+  font-family: var(--app-font-serif);
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  font-weight: 500;
+  letter-spacing: 0.08em;
   text-align: center;
+  text-shadow:
+    0 0 18px rgba(188, 135, 63, 0.32),
+    0 2px 12px rgba(0, 0, 0, 0.55);
   animation: loading-pulse 1.8s ease-in-out infinite;
-}
-
-@keyframes loading-pulse {
-  0%,
-  100% {
-    opacity: 0.45;
-  }
-
-  50% {
-    opacity: 1;
-  }
 }
 
 .katana-slash {
@@ -595,7 +588,7 @@
 }
 
 .top-tabs button.active::after {
-  background: rgba(245, 214, 160, 0.55);
+  background: transparent;
 }
 
 .game-body {

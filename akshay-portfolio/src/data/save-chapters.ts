@@ -110,9 +110,9 @@ export const saveChapters: SaveChapter[] = [
       'Before the full-stack chapter, I sharpened logic through hackathons, school honors, and open-source game prototypes — learning to ship fast, debug under pressure, and present work clearly.',
     timeline: [
       {
-        date: 'IEEE COMPUTER SOCIETY',
+        date: '2025',
         title: '3rd place — Where’s The Flag',
-        detail: 'CTF competition against 35+ teams, decoding flags under time pressure.',
+        detail: 'IEEE Computer Society CTF competition against 35+ teams, decoding flags under time pressure.',
       },
       {
         date: 'SCHOOL HONORS',

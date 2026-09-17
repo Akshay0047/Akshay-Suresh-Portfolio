@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useKunaiModelProgress } from '@/components/kunai-model-context';
 import { preloadCoreAssets } from '@/lib/preload-assets';
 
@@ -52,7 +52,16 @@ export function LoadingScreen({
 
   const isActuallyReady = assetsReady && kunaiProgress >= 100;
   const isHoldingAtCap = displayProgress >= 95 && !isActuallyReady;
+  const isWaitingForInteraction = loadingComplete && !isStriking;
   const progressLabel = Math.min(100, Math.round(displayProgress));
+
+  const handleEnter = useCallback(() => {
+    if (!loadingComplete || strikingRef.current || displayProgress < 100) return;
+    onEnter?.();
+    strikingRef.current = true;
+    setIsStriking(true);
+    window.setTimeout(() => onComplete(), 430);
+  }, [displayProgress, loadingComplete, onComplete, onEnter]);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -99,13 +108,16 @@ export function LoadingScreen({
     return () => window.clearTimeout(timeout);
   }, [assetsReady, kunaiProgress]);
 
-  const handleEnter = () => {
-    if (!loadingComplete || strikingRef.current || displayProgress < 100) return;
-    onEnter?.();
-    strikingRef.current = true;
-    setIsStriking(true);
-    window.setTimeout(() => onComplete(), 430);
-  };
+  useEffect(() => {
+    if (!isWaitingForInteraction) return;
+
+    const handleKeyDown = () => {
+      handleEnter();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleEnter, isWaitingForInteraction]);
 
   return (
     <motion.div
@@ -115,12 +127,6 @@ export function LoadingScreen({
       transition={{ duration: 0.42, ease: [0.23, 1, 0.32, 1] }}
       aria-label="Loading portfolio"
       onClick={handleEnter}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          handleEnter();
-        }
-      }}
       role="button"
       tabIndex={loadingComplete ? 0 : -1}
     >
@@ -130,10 +136,15 @@ export function LoadingScreen({
       <div className="loading-mark">
         <div className="loading-kanji">忍</div>
         <div className="loading-name">AKSHAY SURESH</div>
-        <div className="loading-subtitle">SHINOBI / DEVELOPER</div>
+        <div className="loading-subtitle">DEVELOPER</div>
       </div>
       <div className="loading-glare" aria-hidden="true" />
       <div className="loading-progress">
+        {isWaitingForInteraction && (
+          <div className="loading-enter-prompt">
+            CLICK TO ENTER
+          </div>
+        )}
         <div className="loading-progress-label">
           <span>INITIALIZING ARCHIVE</span>
           <span>{String(progressLabel).padStart(3, '0')}%</span>
@@ -144,9 +155,6 @@ export function LoadingScreen({
             style={{ width: `${displayProgress}%` }}
           />
         </div>
-        {loadingComplete && !isStriking && (
-          <div className="loading-enter-prompt">CLICK TO ENTER</div>
-        )}
       </div>
     </motion.div>
   );
