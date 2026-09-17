@@ -1,10 +1,10 @@
 import '@google/model-viewer';
 
-import { PORTFOLIO_AUDIO_FILES } from '@/components/sound-context';
-
 const assetBase = import.meta.env.BASE_URL.replace(/\/$/, '');
 
-export const CORE_IMAGE_PATHS = ['portrait.jpg', 'portrait.png', 'favicon.svg'] as const;
+/** Critical assets only — everything else loads on demand. */
+export const CORE_IMAGE_PATHS = ['portrait.jpg'] as const;
+export const CORE_AUDIO_PATHS = ['sekiro_kanji.mp3'] as const;
 
 const imageCache = new Map<string, HTMLImageElement>();
 
@@ -88,16 +88,6 @@ function preloadAudio(url: string): Promise<void> {
   );
 }
 
-async function preloadBinary(url: string): Promise<void> {
-  return preloadTrackedAsset(url, async () => {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to preload ${url}: ${response.status}`);
-    }
-    await response.arrayBuffer();
-  });
-}
-
 type ModelViewerElement = HTMLElement & {
   loaded?: boolean;
 };
@@ -161,8 +151,7 @@ export async function preloadKunaiModel(url: string): Promise<void> {
 
 export async function preloadCoreAssets(onProgress: (percent: number) => void): Promise<void> {
   const imageUrls = CORE_IMAGE_PATHS.map(resolveAsset);
-  const audioUrls = PORTFOLIO_AUDIO_FILES.map(resolveAsset);
-  const pdfUrl = resolveAsset('Akshay_Resume.pdf');
+  const audioUrls = CORE_AUDIO_PATHS.map(resolveAsset);
 
   const tasks: Array<{ label: string; run: () => Promise<void> }> = [
     ...imageUrls.map((url, index) => ({
@@ -170,10 +159,9 @@ export async function preloadCoreAssets(onProgress: (percent: number) => void): 
       run: () => preloadImage(url),
     })),
     ...audioUrls.map((url, index) => ({
-      label: `audio:${PORTFOLIO_AUDIO_FILES[index]}`,
+      label: `audio:${CORE_AUDIO_PATHS[index]}`,
       run: () => preloadAudio(url),
     })),
-    { label: 'pdf', run: () => preloadBinary(pdfUrl) },
     {
       label: 'fonts',
       run: async () => {
