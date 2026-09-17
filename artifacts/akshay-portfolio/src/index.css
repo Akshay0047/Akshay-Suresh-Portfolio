@@ -1493,6 +1493,30 @@ kbd {
   color: var(--amber);
 }
 
+.option-row-button {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.option-row-button:hover {
+  color: var(--paper);
+}
+
+.option-row-button:hover b {
+  color: var(--amber-pale);
+}
+
+.option-row-spacer {
+  display: block;
+  width: 18px;
+  height: 18px;
+}
+
 .close-options {
   margin-top: 23px;
 }

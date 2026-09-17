@@ -28,6 +28,7 @@ import {
   ROD_OFFSET_LORE,
 } from '@/components/load-profile';
 import { LoadingScreen } from '@/components/loading-screen';
+import { BrightnessShell, SettingsOptionsPanel, SoundProvider, useSound } from '@/components/sound-context';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -355,6 +356,9 @@ function distanceToSegment(
 const FRUIT_ARCADE_MAX_MARKS = 4;
 
 function FruitArcade() {
+  const { playSlice, playDeath } = useSound();
+  const playSliceRef = useRef(playSlice);
+  const playDeathRef = useRef(playDeath);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const objects = useRef<ArcadeObject[]>([]);
   const splashes = useRef<ArcadeSplash[]>([]);
@@ -374,6 +378,11 @@ function FruitArcade() {
       scoreLabelRef.current.textContent = String(value).padStart(2, '0');
     }
   };
+
+  useEffect(() => {
+    playSliceRef.current = playSlice;
+    playDeathRef.current = playDeath;
+  }, [playSlice, playDeath]);
 
   useEffect(() => {
     activeRef.current = active;
@@ -457,9 +466,11 @@ function FruitArcade() {
       if (item.kind === 'bomb') {
         activeRef.current = false;
         objects.current = [];
+        playDeathRef.current();
         setGameOver(true);
         return;
       }
+      playSliceRef.current();
       scoreRef.current += 1;
       updateScoreLabel(scoreRef.current);
     };
@@ -658,6 +669,7 @@ function FruitArcade() {
           splashes.current = [];
           pointerPos.current.hasValue = false;
           prevPointerPos.current.hasValue = false;
+          playDeathRef.current();
           setGameOver(true);
         }
         if (activeRef.current) {
@@ -804,6 +816,7 @@ function FruitArcade() {
 }
 
 function TitleScreen({ onContinue, onOptions }: { onContinue: () => void; onOptions: () => void }) {
+  const { playKanji } = useSound();
   const [selected, setSelected] = useState(0);
   const [isOpenSaveMenu, setIsOpenSaveMenu] = useState(false);
   const [selectedSaveFile, setSelectedSaveFile] = useState<string | null>(null);
@@ -814,10 +827,12 @@ function TitleScreen({ onContinue, onOptions }: { onContinue: () => void; onOpti
   ];
 
   const activateAction = useCallback((index: number) => {
-    if (index === 0) onContinue();
-    else if (index === 1) setIsOpenSaveMenu(true);
+    if (index === 0) {
+      playKanji();
+      onContinue();
+    } else if (index === 1) setIsOpenSaveMenu(true);
     else onOptions();
-  }, [onContinue, onOptions]);
+  }, [onContinue, onOptions, playKanji]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -1392,12 +1407,25 @@ function SignalPanel() {
 }
 
 function MainMenu({ onReturnToLanding }: { onReturnToLanding: () => void }) {
+  const { playKanji } = useSound();
   const [menuIndex, setMenuIndex] = useState(0);
   const [projectIndex, setProjectIndex] = useState(0);
   const [topTab, setTopTab] = useState('EQUIPMENT');
   const [showOptions, setShowOptions] = useState(false);
 
   const activeMenu = menuItems[menuIndex];
+
+  const selectMenuItem = useCallback((index: number) => {
+    playKanji();
+    setShowOptions(false);
+    setTopTab('INVENTORY');
+    setMenuIndex(index);
+  }, [playKanji]);
+
+  const selectProject = useCallback((index: number) => {
+    playKanji();
+    setProjectIndex(index);
+  }, [playKanji]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -1410,10 +1438,22 @@ function MainMenu({ onReturnToLanding }: { onReturnToLanding: () => void }) {
         setMenuIndex((current) => (current - 1 + menuItems.length) % menuItems.length);
       }
       if (event.key === 'ArrowRight' || event.key.toLowerCase() === 'd') {
-        if (activeMenu.id === 'projects') setProjectIndex((current) => (current + 1) % projects.length);
+        if (activeMenu.id === 'projects') {
+          setProjectIndex((current) => {
+            const next = (current + 1) % projects.length;
+            playKanji();
+            return next;
+          });
+        }
       }
       if (event.key === 'ArrowLeft' || event.key.toLowerCase() === 'a') {
-        if (activeMenu.id === 'projects') setProjectIndex((current) => (current - 1 + projects.length) % projects.length);
+        if (activeMenu.id === 'projects') {
+          setProjectIndex((current) => {
+            const next = (current - 1 + projects.length) % projects.length;
+            playKanji();
+            return next;
+          });
+        }
       }
       if (event.key === 'Escape') {
         setShowOptions(false);
@@ -1425,7 +1465,7 @@ function MainMenu({ onReturnToLanding }: { onReturnToLanding: () => void }) {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeMenu.id]);
+  }, [activeMenu.id, playKanji]);
 
   return (
     <main className="game-screen">
@@ -1462,7 +1502,7 @@ function MainMenu({ onReturnToLanding }: { onReturnToLanding: () => void }) {
           <div className="menu-heading"><Gamepad2 size={15} /><span>QUICK MENU</span></div>
           <div className="menu-buttons">
              {menuItems.map((item) => (
-               <MenuButton key={item.id} item={item} selected={activeMenu.id === item.id} onSelect={() => { setShowOptions(false); setTopTab('INVENTORY'); setMenuIndex(menuItems.indexOf(item)); }} />
+               <MenuButton key={item.id} item={item} selected={activeMenu.id === item.id} onSelect={() => selectMenuItem(menuItems.indexOf(item))} />
             ))}
           </div>
           <div className="menu-footer">
@@ -1482,7 +1522,7 @@ function MainMenu({ onReturnToLanding }: { onReturnToLanding: () => void }) {
               transition={{ duration: 0.22 }}
             >
                {topTab === 'EQUIPMENT' && <EquipmentPanel />}
-               {topTab !== 'EQUIPMENT' && activeMenu.id === 'projects' && <ProjectPanel selectedProject={projectIndex} onProjectChange={setProjectIndex} />}
+               {topTab !== 'EQUIPMENT' && activeMenu.id === 'projects' && <ProjectPanel selectedProject={projectIndex} onProjectChange={selectProject} />}
                {topTab !== 'EQUIPMENT' && activeMenu.id === 'attributes' && <AttributesPanel />}
                {topTab !== 'EQUIPMENT' && activeMenu.id === 'memories' && <MemoriesPanel />}
                {topTab !== 'EQUIPMENT' && activeMenu.id === 'lore' && <LorePanel />}
@@ -1511,6 +1551,7 @@ function MainMenu({ onReturnToLanding }: { onReturnToLanding: () => void }) {
               <div className="option-row"><span>INTERFACE</span><b>GAME MENU</b><Check size={15} /></div>
               <div className="option-row"><span>MOTION</span><b>ENABLED</b><Check size={15} /></div>
               <div className="option-row"><span>INPUT</span><b>WASD / ARROWS</b><Check size={15} /></div>
+              <SettingsOptionsPanel />
               <div className="options-actions">
                 <BladeButton className="game-action-button primary close-options" type="button" onClick={() => { setShowOptions(false); setTopTab('INVENTORY'); }}>RETURN TO MENU</BladeButton>
                 <button className="game-action-button close-options" type="button" onClick={onReturnToLanding}>RETURN TO LANDING</button>
@@ -1524,22 +1565,28 @@ function MainMenu({ onReturnToLanding }: { onReturnToLanding: () => void }) {
 }
 
 function Home() {
+  const { startMusic } = useSound();
   const [screen, setScreen] = useState<'title' | 'menu'>('title');
   const [openTitleOptions, setOpenTitleOptions] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const completeLoading = useCallback(() => setIsLoading(false), []);
+  const enterPortfolio = useCallback(() => {
+    startMusic();
+    setScreen('menu');
+  }, [startMusic]);
   return (
     <div className="portfolio-app">
       <div className="portfolio-ui relative z-10 h-full min-h-0 bg-transparent">
         <SwordCursor />
         <AnimatePresence mode="wait">
           {screen === 'title' && !openTitleOptions && (
-            <TitleScreen key="title" onContinue={() => setScreen('menu')} onOptions={() => setOpenTitleOptions(true)} />
+            <TitleScreen key="title" onContinue={enterPortfolio} onOptions={() => setOpenTitleOptions(true)} />
           )}
           {screen === 'title' && openTitleOptions && (
             <motion.div className="title-options-backdrop" key="title-options" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <div className="title-options">
                 <div className="panel-topline"><span>SETTINGS</span><button type="button" onClick={() => setOpenTitleOptions(false)} aria-label="Close settings"><X size={17} /></button></div>
+                <SettingsOptionsPanel />
                 <p>Interface motion and input are ready for the archive.</p>
                 <BladeButton className="game-action-button primary" type="button" onClick={() => setOpenTitleOptions(false)}>RETURN</BladeButton>
               </div>
@@ -1581,15 +1628,19 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-          <Atmosphere />
-          <div className="app-shell relative z-10 h-full min-h-0 bg-transparent">
-            <Router />
-          </div>
-        </WouterRouter>
-        <Toaster />
-      </TooltipProvider>
+      <SoundProvider>
+        <TooltipProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+            <BrightnessShell>
+              <Atmosphere />
+              <div className="app-shell relative z-10 h-full min-h-0 bg-transparent">
+                <Router />
+              </div>
+            </BrightnessShell>
+          </WouterRouter>
+          <Toaster />
+        </TooltipProvider>
+      </SoundProvider>
     </QueryClientProvider>
   );
 }
