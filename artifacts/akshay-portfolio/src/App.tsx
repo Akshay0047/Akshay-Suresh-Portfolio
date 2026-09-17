@@ -384,7 +384,7 @@ function distanceToSegment(
 const FRUIT_ARCADE_MAX_MARKS = 4;
 
 function FruitArcade() {
-  const { playSlice, playDeath } = useSound();
+  const { playSlice, playDeath, stopDeath } = useSound();
   const playSliceRef = useRef(playSlice);
   const playDeathRef = useRef(playDeath);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -799,11 +799,16 @@ function FruitArcade() {
   };
 
   const exitArcade = () => {
+    stopDeath();
     activeRef.current = false;
     lastActivity.current = 0;
     setGameOver(false);
     setActive(false);
   };
+
+  useEffect(() => () => {
+    stopDeath();
+  }, [stopDeath]);
 
   const toggleArcade = () => {
     if (active) {
