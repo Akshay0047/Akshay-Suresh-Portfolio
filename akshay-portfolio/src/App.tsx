@@ -20,7 +20,7 @@ import {
 import Atmosphere from '@/components/Atmosphere';
 import { BladeButton } from '@/components/blade-button';
 import { EquipmentPanel } from '@/components/equipment';
-import { AssetWarmup } from '@/components/asset-warmup';
+import { KunaiModelProvider } from '@/components/kunai-model-context';
 import {
   LoadProfileExperience,
   PARCHMENT_HEIGHT_LORE,
@@ -1571,23 +1571,30 @@ function MainMenu({ onReturnToLanding }: { onReturnToLanding: () => void }) {
         </aside>}
 
         <section className={`inspect-column ${topTab === 'EQUIPMENT' ? 'is-equipment-view' : ''}`} aria-live="polite">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={`${topTab}-${activeMenu.id}`}
-              className="panel-wrapper"
-              initial={{ opacity: 0, x: 14 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -10 }}
-              transition={{ duration: 0.22 }}
-            >
-               {topTab === 'EQUIPMENT' && <EquipmentPanel />}
-               {topTab !== 'EQUIPMENT' && activeMenu.id === 'projects' && <ProjectPanel selectedProject={projectIndex} onProjectChange={selectProject} />}
-               {topTab !== 'EQUIPMENT' && activeMenu.id === 'attributes' && <AttributesPanel />}
-               {topTab !== 'EQUIPMENT' && activeMenu.id === 'memories' && <MemoriesPanel />}
-               {topTab !== 'EQUIPMENT' && activeMenu.id === 'lore' && <LorePanel />}
-               {topTab !== 'EQUIPMENT' && activeMenu.id === 'signal' && <SignalPanel />}
-            </motion.div>
-          </AnimatePresence>
+          <div
+            className={topTab === 'EQUIPMENT' ? 'panel-wrapper block h-full min-h-0' : 'hidden'}
+            aria-hidden={topTab !== 'EQUIPMENT'}
+          >
+            <EquipmentPanel />
+          </div>
+          {topTab !== 'EQUIPMENT' && (
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`${topTab}-${activeMenu.id}`}
+                className="panel-wrapper"
+                initial={{ opacity: 0, x: 14 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.22 }}
+              >
+                {activeMenu.id === 'projects' && <ProjectPanel selectedProject={projectIndex} onProjectChange={selectProject} />}
+                {activeMenu.id === 'attributes' && <AttributesPanel />}
+                {activeMenu.id === 'memories' && <MemoriesPanel />}
+                {activeMenu.id === 'lore' && <LorePanel />}
+                {activeMenu.id === 'signal' && <SignalPanel />}
+              </motion.div>
+            </AnimatePresence>
+          )}
         </section>
       </div>
 
@@ -1634,17 +1641,17 @@ function Home() {
     setScreen('menu');
   }, [startMusic]);
   return (
-    <div className="portfolio-app">
-      <div
-        className={`portfolio-ui relative z-10 h-full min-h-0 bg-transparent ${isLoading ? 'pointer-events-none opacity-0' : 'opacity-100'}`}
-        aria-hidden={isLoading}
-      >
-        <AnimatePresence mode="wait">
-          {screen === 'title' && !openTitleOptions && (
-            <TitleScreen key="title" onContinue={enterPortfolio} onOptions={() => setOpenTitleOptions(true)} />
-          )}
+    <KunaiModelProvider>
+      <div className="portfolio-app">
+        <div
+          className={`portfolio-ui relative z-10 h-full min-h-0 bg-transparent ${isLoading ? 'pointer-events-none opacity-0' : 'opacity-100'}`}
+          aria-hidden={isLoading}
+        >
+          <div className={screen === 'title' && !openTitleOptions ? 'h-full min-h-0' : 'hidden'} aria-hidden={screen !== 'title' || openTitleOptions}>
+            <TitleScreen onContinue={enterPortfolio} onOptions={() => setOpenTitleOptions(true)} />
+          </div>
           {screen === 'title' && openTitleOptions && (
-            <motion.div className="title-options-backdrop" key="title-options" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div className="title-options-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <div className="title-options">
                 <div className="panel-topline"><span>SETTINGS</span><button type="button" onClick={() => setOpenTitleOptions(false)} aria-label="Close settings"><X size={17} /></button></div>
                 <SettingsOptionsPanel />
@@ -1653,20 +1660,25 @@ function Home() {
               </div>
             </motion.div>
           )}
-          {screen === 'menu' && (
+          <div
+            className={
+              screen === 'menu'
+                ? 'h-full min-h-0'
+                : 'pointer-events-none absolute inset-0 overflow-hidden opacity-0'
+            }
+            aria-hidden={screen !== 'menu'}
+          >
             <MainMenu
-              key="menu"
               onReturnToLanding={() => {
                 setOpenTitleOptions(false);
                 setScreen('title');
               }}
             />
-          )}
-        </AnimatePresence>
+          </div>
+        </div>
+        <AnimatePresence>{isLoading && <LoadingScreen key="loading" onComplete={completeLoading} onEnter={startMusic} />}</AnimatePresence>
       </div>
-      <AssetWarmup />
-      <AnimatePresence>{isLoading && <LoadingScreen key="loading" onComplete={completeLoading} onEnter={startMusic} />}</AnimatePresence>
-    </div>
+    </KunaiModelProvider>
   );
 }
 

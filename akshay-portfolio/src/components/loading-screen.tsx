@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useKunaiModelProgress } from '@/components/kunai-model-context';
 import { preloadCoreAssets } from '@/lib/preload-assets';
 
 function Particles({ count = 28 }: { count?: number }) {
@@ -42,7 +43,9 @@ export function LoadingScreen({
   onComplete: () => void;
   onEnter?: () => void;
 }) {
-  const [progress, setProgress] = useState(0);
+  const { progress: kunaiProgress, ready: kunaiReady } = useKunaiModelProgress();
+  const [assetProgress, setAssetProgress] = useState(0);
+  const [assetsReady, setAssetsReady] = useState(false);
   const [isStriking, setIsStriking] = useState(false);
   const [canEnter, setCanEnter] = useState(false);
   const strikingRef = useRef(false);
@@ -52,15 +55,15 @@ export function LoadingScreen({
 
     preloadCoreAssets((percent) => {
       if (!mounted) return;
-      setProgress(percent);
+      setAssetProgress(percent);
       if (percent >= 100) {
-        setCanEnter(true);
+        setAssetsReady(true);
       }
     }).catch((error) => {
       console.error('[preload] Asset preload failed:', error);
       if (!mounted) return;
-      setProgress(100);
-      setCanEnter(true);
+      setAssetProgress(100);
+      setAssetsReady(true);
     });
 
     return () => {
@@ -68,10 +71,19 @@ export function LoadingScreen({
     };
   }, []);
 
-  const displayProgress = Math.min(100, Math.round(progress));
+  const displayProgress = Math.min(
+    100,
+    Math.round((assetProgress + kunaiProgress) / 2),
+  );
+
+  useEffect(() => {
+    if (assetsReady && kunaiReady && kunaiProgress >= 100) {
+      setCanEnter(true);
+    }
+  }, [assetsReady, kunaiProgress, kunaiReady]);
 
   const handleEnter = () => {
-    if (!canEnter || strikingRef.current || displayProgress < 100) return;
+    if (!canEnter || strikingRef.current || displayProgress < 100 || !kunaiReady) return;
     onEnter?.();
     strikingRef.current = true;
     setIsStriking(true);

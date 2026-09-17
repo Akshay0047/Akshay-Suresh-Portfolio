@@ -2,11 +2,13 @@ import '@google/model-viewer';
 import { motion } from 'framer-motion';
 import { CircleDot, Code2, Crosshair, Database, Sparkles } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useEffect, useRef, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react';
+import { useKunaiModelProgress } from '@/components/kunai-model-context';
+import { preloadKunaiModel } from '@/lib/preload-assets';
 
 const assetBase = import.meta.env.BASE_URL.replace(/\/$/, '');
 const portraitSrc = `${assetBase}/portrait.jpg`;
-const kunaiSrc = `${assetBase}/kunai.glb`;
+export const kunaiSrc = `${assetBase}/kunai.glb`;
 
 type LoadoutSlot = {
   slot: string;
@@ -123,6 +125,13 @@ function ProstheticToolCard({ modelRef }: { modelRef: RefObject<HTMLElement | nu
 
 export function EquipmentPanel() {
   const modelRef = useRef<HTMLElement | null>(null);
+  const { bindModelViewer } = useKunaiModelProgress();
+
+  useLayoutEffect(() => {
+    const viewer = modelRef.current;
+    if (!viewer) return;
+    return bindModelViewer(viewer);
+  }, [bindModelViewer]);
 
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
@@ -216,3 +225,6 @@ export function EquipmentPanel() {
     </div>
   );
 }
+
+// Warm the kunai GLB as soon as this module loads (model-viewer, not R3F useGLTF).
+void preloadKunaiModel(kunaiSrc);

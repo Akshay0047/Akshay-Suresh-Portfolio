@@ -135,7 +135,6 @@ export async function preloadKunaiModel(url: string): Promise<void> {
 export async function preloadCoreAssets(onProgress: (percent: number) => void): Promise<void> {
   const imageUrls = CORE_IMAGE_PATHS.map(resolveAsset);
   const audioUrls = PORTFOLIO_AUDIO_FILES.map(resolveAsset);
-  const kunaiUrl = resolveAsset('kunai.glb');
   const pdfUrl = resolveAsset('Akshay_Resume.pdf');
 
   const tasks: Array<{ label: string; run: () => Promise<void> }> = [
@@ -148,7 +147,6 @@ export async function preloadCoreAssets(onProgress: (percent: number) => void): 
       run: () => preloadAudio(url),
     })),
     { label: 'pdf', run: () => preloadBinary(pdfUrl) },
-    { label: 'kunai-model', run: () => preloadKunaiModel(kunaiUrl) },
     {
       label: 'fonts',
       run: async () => {
