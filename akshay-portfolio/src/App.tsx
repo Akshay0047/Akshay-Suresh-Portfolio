@@ -581,7 +581,7 @@ function FruitArcade() {
       return time;
     };
 
-    const drawFruit = (item: ArcadeObject) => {
+    const drawFruit = (item: ArcadeObject, time: number) => {
       if (item.sliced) return;
       context.save();
       context.translate(item.x, item.y);
@@ -590,6 +590,29 @@ function FruitArcade() {
         const radius = item.radius;
         const fuseEndX = 20;
         const fuseEndY = -radius - 10;
+        const blink = 0.5 + 0.5 * Math.sin(time * 0.007);
+        const glowAlpha = 0.22 + blink * 0.18;
+
+        const underGlow = context.createRadialGradient(0, radius * 0.42, radius * 0.08, 0, radius * 0.42, radius * 1.35);
+        underGlow.addColorStop(0, `rgba(235, 70, 55, ${glowAlpha + 0.1})`);
+        underGlow.addColorStop(0.45, `rgba(190, 35, 30, ${glowAlpha * 0.85})`);
+        underGlow.addColorStop(1, 'rgba(120, 20, 15, 0)');
+        context.beginPath();
+        context.ellipse(0, radius * 0.42, radius * 1.15, radius * 0.5, 0, 0, Math.PI * 2);
+        context.fillStyle = underGlow;
+        context.fill();
+
+        const halo = context.createRadialGradient(0, 0, radius * 0.92, 0, 0, radius * 1.55);
+        halo.addColorStop(0, 'rgba(0, 0, 0, 0)');
+        halo.addColorStop(0.62, `rgba(210, 45, 35, ${0.12 + blink * 0.14})`);
+        halo.addColorStop(1, 'rgba(120, 20, 15, 0)');
+        context.beginPath();
+        context.arc(0, 0, radius * 1.55, 0, Math.PI * 2);
+        context.fillStyle = halo;
+        context.fill();
+
+        context.shadowBlur = 0;
+        context.shadowColor = 'transparent';
 
         context.beginPath();
         context.moveTo(0, -radius);
@@ -623,6 +646,16 @@ function FruitArcade() {
         context.arc(0, 0, radius, 0, Math.PI * 2);
         context.fillStyle = gradient;
         context.fill();
+
+        context.beginPath();
+        context.arc(0, 0, radius, 0, Math.PI * 2);
+        context.strokeStyle = `rgba(220, 55, 42, ${0.28 + blink * 0.22})`;
+        context.lineWidth = 1.5;
+        context.shadowColor = `rgba(220, 45, 35, ${0.45 + blink * 0.35})`;
+        context.shadowBlur = 10 + blink * 10;
+        context.stroke();
+        context.shadowBlur = 0;
+        context.shadowColor = 'transparent';
       } else {
         const gradient = context.createRadialGradient(-8, -10, 2, 0, 0, item.radius);
         gradient.addColorStop(0, '#fff1b5');
@@ -757,7 +790,7 @@ function FruitArcade() {
       }
       liveSplashes.length = splashWriteIndex;
 
-      objects.current.forEach(drawFruit);
+      objects.current.forEach((item) => drawFruit(item, time));
       splashes.current.forEach((particle) => {
         context.save();
         context.translate(particle.x, particle.y);
