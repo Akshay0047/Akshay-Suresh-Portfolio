@@ -8,6 +8,7 @@ import './styles/valorant.css';
 
 function Experience() {
   const rig = useCameraRig();
+  const { roaming } = rig;
   const { progress, active } = useProgress();
   const [ready, setReady] = useState(false);
   const [shadersReady, setShadersReady] = useState(false);
@@ -23,7 +24,7 @@ function Experience() {
   }, [assetsReady, shadersReady]);
 
   return (
-    <div className="valorant-root" data-ready={ready}>
+    <div className={`valorant-root${roaming ? ' is-roaming' : ''}`} data-ready={ready} data-roaming={roaming ? 'true' : 'false'}>
       <ValorantScene rig={rig} onShadersReady={onShadersReady} />
       <ValorantHUD ready={ready} />
       <ValorantCursor />

@@ -6,6 +6,7 @@ import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js
 import gsap from 'gsap';
 import * as THREE from 'three';
 import CameraController from './CameraController.jsx';
+import WalkController from './WalkController.jsx';
 import {
   CAST, GUN, MAP_POSITION, MODEL_URLS, RADIANITE, SECTION_ORBITS, SITE_CENTER, SPIKE, SUN_OFFSET,
 } from '../sceneConfig.js';
@@ -667,7 +668,11 @@ function SceneContents({ rig, debug, lowQuality, onShadersReady }) {
       <Pedestal />
       <InteractiveGun />
 
-      {debug ? <DebugRig /> : <CameraController sections={SECTION_ORBITS} rig={rig} getCollider={() => registry.mapScene} />}
+      {debug ? <DebugRig /> : rig.roaming ? (
+        <WalkController onExit={() => rig.setRoaming(false)} />
+      ) : (
+        <CameraController sections={SECTION_ORBITS} rig={rig} getCollider={() => registry.mapScene} />
+      )}
       <GraphicsBinding />
       <SceneBloom />
       <ShaderWarmup onReady={onShadersReady} />

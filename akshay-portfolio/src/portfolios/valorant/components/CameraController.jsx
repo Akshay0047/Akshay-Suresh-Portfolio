@@ -14,12 +14,15 @@ const CameraRigContext = createContext(null);
 export function CameraRigProvider({ initialSection = 'home', children }) {
   const [section, setSection] = useState(initialSection);
   const [settled, setSettled] = useState(false);
+  const [roaming, setRoaming] = useState(false);
   const goToRef = useRef(null);
+  /** Survives CameraController unmount so the orbit resumes after a walk. */
+  const hasRoamed = useRef(false);
 
   const goTo = useCallback((id) => goToRef.current?.(id), []);
   const value = useMemo(
-    () => ({ section, settled, setSection, setSettled, goTo, goToRef }),
-    [section, settled, goTo],
+    () => ({ section, settled, setSection, setSettled, goTo, goToRef, roaming, setRoaming, hasRoamed }),
+    [section, settled, goTo, roaming],
   );
 
   return <CameraRigContext.Provider value={value}>{children}</CameraRigContext.Provider>;
@@ -182,9 +185,18 @@ export default function CameraController({ sections, rig, enabled = true, getCol
   // Once only. Re-running this when goToSection's identity changes yanks the
   // camera back to the overview in the middle of a later move.
   const booted = useRef(false);
+  const resumeOrbit = rig.hasRoamed.current ? (sections[rig.section] ?? sections.home) : null;
+  if (resumeOrbit && !booted.current) lookAtTarget.copy(resumeOrbit.center);
   useEffect(() => {
     if (!enabled || booted.current) return;
     booted.current = true;
+    // Returning from free roam: glide from the player's feet back to this section.
+    if (rig.hasRoamed.current) {
+      const orbit = sections[rig.section] ?? sections.home;
+      lookAtTarget.copy(orbit.center);
+      goToSection(sections[rig.section] ? rig.section : 'home');
+      return;
+    }
     const home = sections.home;
     camera.position.set(home.center.x, home.center.y + 60, home.center.z + home.radius * 1.4);
     lookAtTarget.copy(home.center);

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useCameraRig } from './CameraController.jsx';
@@ -230,7 +231,7 @@ function CommsPanel() {
 const PANELS = { home: HomePanel, projects: ProjectsPanel, skills: SkillsPanel, about: AboutPanel, comms: CommsPanel };
 
 export default function ValorantHUD({ ready }) {
-  const { section, settled, goTo } = useCameraRig();
+  const { section, settled, goTo, roaming, setRoaming, hasRoamed } = useCameraRig();
   const [glitchKey, setGlitchKey] = useState(0);
   const settingsOpen = useSettingsStore((state) => state.settingsOpen);
 
@@ -239,16 +240,30 @@ export default function ValorantHUD({ ready }) {
     setGlitchKey((value) => value + 1);
   }, [section]);
 
+  const enterFreeRoam = useCallback(() => {
+    if (useSettingsStore.getState().settingsOpen || roaming) return;
+    hasRoamed.current = true;
+    flushSync(() => setRoaming(true));
+    document.querySelector('canvas.valorant-canvas')?.requestPointerLock();
+  }, [hasRoamed, roaming, setRoaming]);
+
   useEffect(() => {
     if (!ready) return undefined;
     const onKey = (event) => {
+      if (event.repeat) return;
       if (useSettingsStore.getState().settingsOpen) return;
+      if (event.code === 'KeyF') {
+        event.preventDefault();
+        enterFreeRoam();
+        return;
+      }
+      if (roaming) return;
       const match = SECTIONS.find((item) => item.key === event.key);
       if (match) goTo(match.id);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [goTo, ready]);
+  }, [goTo, ready, roaming, enterFreeRoam]);
 
   if (!ready) return null;
 
@@ -289,6 +304,18 @@ export default function ValorantHUD({ ready }) {
           </motion.aside>
         )}
       </AnimatePresence>
+
+      {!roaming && (
+        <button type="button" className="vh-roam" data-testid="enter-roam" onClick={enterFreeRoam}>
+          [F] ENTER FREE ROAM
+        </button>
+      )}
+      {roaming && (
+        <>
+          <div className="vh-roam-cross" data-testid="roam-crosshair" aria-hidden="true" />
+          <p className="vh-roam vh-roam-live">[ESC] EXIT FREE ROAM</p>
+        </>
+      )}
 
       <div className="vh-status" aria-live="polite">
         {settled ? `LOCKED // ${SECTIONS.find((item) => item.id === section)?.tag}` : 'REPOSITIONING...'}
