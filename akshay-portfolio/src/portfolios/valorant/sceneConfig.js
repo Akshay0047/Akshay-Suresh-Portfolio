@@ -78,7 +78,7 @@ export const CAST = [
 export const SECTION_ORBITS = {
   // Tiny sweep: the floating Vandal is a foreground prop and must stay in frame.
   home: { center: v(63, 5, -96), radius: 34, height: 19, angle: 0, arc: 0.05, speed: 0.12 },
-  // Operations: Neon sprints the entry with the sprinter aim pose; Phoenix holds.
+  // Operations: Neon holds the TP sprinter aim; Phoenix holds.
   projects: { center: v(55.4, 4.4, -98.4), radius: 5.4, height: 0.6, angle: Math.PI / 2 - 0.25, arc: 0.25, speed: 0.2 },
   // Arsenal: Chamber's Operator from the crate perch.
   skills: { center: v(62, 8.6, -84), radius: 5.6, height: 0.5, angle: Math.PI - 0.2, arc: 0.5, speed: 0.2 },

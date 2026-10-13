@@ -10,8 +10,8 @@ import WalkController from './WalkController.jsx';
 import {
   CAST, GUN, MAP_POSITION, MODEL_URLS, RADIANITE, SECTION_ORBITS, SITE_CENTER, SPIKE, SUN_OFFSET,
 } from '../sceneConfig.js';
-import { applyPose, attachWeapon, createRig, describeWeapon, holdWeapon, overlayClipLocal } from '../agentRig.js';
-import { adsPose, castPose, crouchPose, lowReadyPose, sprintPose, ultPose } from '../agentPoses.js';
+import { applyPose, attachWeapon, createRig, describeWeapon, overlayClipLocal } from '../agentRig.js';
+import { adsPose, castPose, crouchPose, lowReadyPose, ultPose } from '../agentPoses.js';
 import { getSprinterRotations, preloadSprinterClip } from '../psaClip.js';
 import { QUALITY_ENV, QUALITY_SHADOW_MAP, useSettingsStore } from '../store/useSettingsStore.js';
 
@@ -24,7 +24,6 @@ useGLTF.setDecoderPath(`${import.meta.env.BASE_URL}draco/`);
 const registry = { agents: {}, mapScene: null };
 
 const POSES = {
-  sprint: sprintPose,
   ads: adsPose,
   lowReady: lowReadyPose,
   crouch: crouchPose,
@@ -234,16 +233,7 @@ function Agent({ cast }) {
     const t = (window.__poseTime ?? clock.elapsedTime) + (cast.timeOffset ?? 0);
     if (cast.pose === 'sprinter') {
       const clip = getSprinterRotations();
-      applyPose(rig.current, sprintPose(t, cast));
-      if (clip) {
-        // Legs stay on the sprint cycle. The PSA is an upper-body aim, blended
-        // onto the spine and head, then both hands are put back on the rifle.
-        overlayClipLocal(rig.current, clip);
-        holdWeapon(rig.current, {
-          weapon: { pos: [-0.08, 1.42, 0.26], aimAt: cast.aimAt, palm: [-0.03, -0.085] },
-          poles: { L: [0.7, -0.9, -0.3], R: [-0.9, -0.5, -0.4] },
-        });
-      }
+      if (clip) overlayClipLocal(rig.current, clip);
       return;
     }
     const poser = POSES[cast.pose];

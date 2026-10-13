@@ -355,14 +355,26 @@ export function applyPose(rig, spec) {
 const UNREAL_TO_Y_UP = new THREE.Quaternion(-Math.SQRT1_2, 0, 0, Math.SQRT1_2);
 const Y_UP_TO_UNREAL = UNREAL_TO_Y_UP.clone().invert();
 
+/** Put every bone back on the exported bind pose. */
+export function restoreRest(rig) {
+  const { bones, rest, model } = rig;
+  Object.keys(rest).forEach((name) => {
+    const bone = bones[name];
+    if (!bone) return;
+    bone.quaternion.copy(rest[name].q);
+    bone.position.copy(rest[name].p);
+  });
+  model.updateWorldMatrix(true, true);
+}
+
 /**
- * Layer an ActorX clip onto the current pose. Keys are parent-local quaternions
- * from the Unreal bind. They are swung into Y-up, then applied on top of the GLB
- * rest quaternion (the export's per-bone axis correction). Bones left out of
- * `rotations` — the sprinting legs, for an upper-body clip — stay as they are.
+ * Apply an ActorX clip on the bind pose. Keys are parent-local quaternions from
+ * the Unreal bind, swung into Y-up, then composed with the GLB rest quaternion.
+ * Bones the clip does not key stay on the bind pose.
  */
-export function overlayClipLocal(rig, rotations) {
+export function overlayClipLocal(rig, rotations, weight = 1) {
   const { bones, rest } = rig;
+  restoreRest(rig);
   for (const name in rotations) {
     const bone = bones[name];
     const base = rest[name];
@@ -371,9 +383,7 @@ export function overlayClipLocal(rig, rotations) {
     s.q1.set(q[0], q[1], q[2], q[3]).normalize();
     s.q2.copy(UNREAL_TO_Y_UP).multiply(s.q1).multiply(Y_UP_TO_UNREAL);
     s.q4.copy(base.q).multiply(s.q2);
-    // Full strength folds the head down onto the rifle. A partial blend keeps the
-    // northwest aim without burying the gun in the neck.
-    bone.quaternion.copy(base.q).slerp(s.q4, 0.62);
+    bone.quaternion.copy(base.q).slerp(s.q4, weight);
   }
   rig.model.updateWorldMatrix(true, true);
 }
