@@ -106,6 +106,26 @@ function sanitizeMaterial(material) {
   material.needsUpdate = true;
 }
 
+/** Keep map trims from bleeding at UV edges: repeat across seams and sharpen with anisotropy. */
+function tuneMapTextures(root) {
+  root.traverse((child) => {
+    if (!child.isMesh) return;
+    const materials = Array.isArray(child.material) ? child.material : [child.material];
+    materials.forEach((material) => {
+      if (!material) return;
+      ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap', 'emissiveMap'].forEach((slot) => {
+        const texture = material[slot];
+        if (!texture) return;
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.anisotropy = 16;
+        texture.needsUpdate = true;
+      });
+      material.needsUpdate = true;
+    });
+  });
+}
+
 function sanitizeScene(root, { shadows = true } = {}) {
   root.traverse((object) => {
     if (!object.isMesh) return;
@@ -121,6 +141,7 @@ function MapModel() {
   const { scene } = useGLTF(MODEL_URLS.map, true);
   useLayoutEffect(() => {
     sanitizeScene(scene);
+    tuneMapTextures(scene);
     registry.mapScene = scene;
   }, [scene]);
   return (
