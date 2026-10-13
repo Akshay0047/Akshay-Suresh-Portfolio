@@ -1,6 +1,7 @@
 import { Fragment, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, createPortal, useFrame, useThree } from '@react-three/fiber';
 import { Bvh, Environment, Html, OrbitControls, Outlines, useGLTF, useProgress } from '@react-three/drei';
+import { Bloom, EffectComposer } from '@react-three/postprocessing';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import gsap from 'gsap';
 import * as THREE from 'three';
@@ -11,6 +12,7 @@ import {
 import { applyPose, attachWeapon, createRig, describeWeapon, holdWeapon, overlayClipLocal } from '../agentRig.js';
 import { adsPose, castPose, crouchPose, lowReadyPose, sprintPose, ultPose } from '../agentPoses.js';
 import { getSprinterRotations, preloadSprinterClip } from '../psaClip.js';
+import { QUALITY_ENV, QUALITY_SHADOW_MAP, useSettingsStore } from '../store/useSettingsStore.js';
 
 preloadSprinterClip();
 
@@ -106,6 +108,7 @@ function sanitizeMaterial(material) {
 function sanitizeScene(root, { shadows = true } = {}) {
   root.traverse((object) => {
     if (!object.isMesh) return;
+    if (!shadows) object.userData.noShadow = true;
     object.castShadow = shadows;
     object.receiveShadow = shadows;
     (Array.isArray(object.material) ? object.material : [object.material]).forEach(sanitizeMaterial);
@@ -450,6 +453,9 @@ function Spike() {
 function Sun({ lowQuality }) {
   const light = useRef();
   const target = useMemo(() => new THREE.Object3D(), []);
+  const graphicsQuality = useSettingsStore((state) => state.graphicsQuality);
+  const shadowsEnabled = useSettingsStore((state) => state.shadowsEnabled);
+  const mapSize = lowQuality ? 1024 : (QUALITY_SHADOW_MAP[graphicsQuality] ?? 2048);
   useLayoutEffect(() => {
     target.position.set(...SITE_CENTER);
     target.updateMatrixWorld();
@@ -467,8 +473,8 @@ function Sun({ lowQuality }) {
         position={position}
         intensity={3.4}
         color="#fff4e0"
-        castShadow
-        shadow-mapSize={lowQuality ? [1024, 1024] : [2048, 2048]}
+        castShadow={shadowsEnabled}
+        shadow-mapSize={[mapSize, mapSize]}
         shadow-camera-near={1}
         shadow-camera-far={260}
         shadow-camera-left={-48}
@@ -554,7 +560,7 @@ function CloudDome() {
   });
 
   return (
-    <mesh ref={dome} frustumCulled={false} renderOrder={-1} dispose={null}>
+    <mesh ref={dome} frustumCulled={false} renderOrder={-1} dispose={null} userData={{ noShadow: true }}>
       <sphereGeometry args={[500, 32, 24]} />
       <primitive object={material} attach="material" dispose={null} />
     </mesh>
@@ -602,7 +608,8 @@ function ReflectionProbe({ lowQuality }) {
     gl.shadowMap.autoUpdate = shadows;
     const next = pmrem.fromCubemap(probe.target.texture);
     scene.environment = next.texture;
-    scene.environmentIntensity = 0.72;
+    const quality = useSettingsStore.getState().graphicsQuality;
+    scene.environmentIntensity = QUALITY_ENV[quality] ?? QUALITY_ENV.high;
     current.current?.dispose();
     current.current = next;
   });
@@ -613,6 +620,8 @@ function ReflectionProbe({ lowQuality }) {
 /* ---------------------------------------------------------------- Contents */
 function SceneContents({ rig, debug, lowQuality, onShadersReady }) {
   const { camera, scene, gl } = useThree();
+  const graphicsQuality = useSettingsStore((state) => state.graphicsQuality);
+  const environmentIntensity = QUALITY_ENV[graphicsQuality] ?? QUALITY_ENV.high;
   useEffect(() => {
     window.__valorant = {
       registry,
@@ -640,7 +649,7 @@ function SceneContents({ rig, debug, lowQuality, onShadersReady }) {
     <>
       <CloudDome />
       <fog attach="fog" args={['#8eabC4', 280, 860]} />
-      <Environment preset="park" environmentIntensity={0.35} background={false} />
+      <Environment preset="park" environmentIntensity={environmentIntensity} background={false} />
       <ReflectionProbe lowQuality={lowQuality} />
       <hemisphereLight args={['#c5d7ea', '#e7d3b0', 0.38]} />
       <Sun lowQuality={lowQuality} />
@@ -659,6 +668,8 @@ function SceneContents({ rig, debug, lowQuality, onShadersReady }) {
       <InteractiveGun />
 
       {debug ? <DebugRig /> : <CameraController sections={SECTION_ORBITS} rig={rig} getCollider={() => registry.mapScene} />}
+      <GraphicsBinding />
+      <SceneBloom />
       <ShaderWarmup onReady={onShadersReady} />
     </>
   );
@@ -721,7 +732,49 @@ function DebugRig() {
   return <OrbitControls ref={controls} makeDefault target={[62, 3, -95]} maxDistance={400} />;
 }
 
+/**
+ * Quality drives reflection strength and shadow-map size. Shadows and bloom
+ * follow the settings store. Meshes marked noShadow (sage ult, sky) stay dark.
+ */
+function GraphicsBinding() {
+  const shadowsEnabled = useSettingsStore((state) => state.shadowsEnabled);
+  const graphicsQuality = useSettingsStore((state) => state.graphicsQuality);
+  const { gl, scene } = useThree();
+
+  useLayoutEffect(() => {
+    gl.shadowMap.enabled = shadowsEnabled;
+    gl.shadowMap.needsUpdate = true;
+    scene.environmentIntensity = QUALITY_ENV[graphicsQuality] ?? QUALITY_ENV.high;
+    scene.traverse((object) => {
+      if (!object.isMesh || object.userData.noShadow) return;
+      if (object.material?.side === THREE.BackSide) return;
+      object.castShadow = shadowsEnabled;
+      object.receiveShadow = shadowsEnabled;
+    });
+  }, [shadowsEnabled, graphicsQuality, gl, scene]);
+
+  useFrame(() => {
+    if (gl.shadowMap.enabled === shadowsEnabled) return;
+    gl.shadowMap.enabled = shadowsEnabled;
+    gl.shadowMap.needsUpdate = true;
+  });
+
+  return null;
+}
+
+function SceneBloom() {
+  const bloomEnabled = useSettingsStore((state) => state.bloomEnabled);
+  if (!bloomEnabled) return null;
+  return (
+    <EffectComposer multisampling={0}>
+      <Bloom intensity={0.45} luminanceThreshold={0.85} luminanceSmoothing={0.25} mipmapBlur />
+    </EffectComposer>
+  );
+}
+
 export default function ValorantScene({ rig, onShadersReady }) {
+  const resolutionScale = useSettingsStore((state) => state.resolutionScale);
+  const shadowsEnabled = useSettingsStore((state) => state.shadowsEnabled);
   const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
   const debug = params.has('debug');
   // ?quality=low renders at reduced resolution (used for automated checks on
@@ -730,8 +783,8 @@ export default function ValorantScene({ rig, onShadersReady }) {
   return (
     <Canvas
       className="valorant-canvas"
-      shadows="percentage"
-      dpr={lowQuality ? 0.6 : [1, 1.5]}
+      shadows={shadowsEnabled ? 'percentage' : false}
+      dpr={lowQuality ? 0.6 : resolutionScale}
       camera={{ fov: 50, near: 0.1, far: 1200, position: [127, 60, 0] }}
       gl={{
         antialias: false,

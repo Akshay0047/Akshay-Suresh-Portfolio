@@ -119,7 +119,7 @@ html.valorant-route * {
 .vh-brand {
   position: absolute;
   top: 28px;
-  right: 36px;
+  right: 96px;
   display: flex;
   gap: 10px;
   align-items: baseline;
@@ -128,6 +128,29 @@ html.valorant-route * {
   font-style: italic;
   letter-spacing: 0.22em;
   color: #ece8e1;
+}
+
+.vh-gear {
+  position: absolute;
+  top: 18px;
+  right: 28px;
+  z-index: 8;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  pointer-events: auto;
+  color: #ece8e1;
+  background: rgba(11, 15, 20, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+}
+
+.vh-gear:hover,
+.vh-gear:focus-visible {
+  color: #0b0f14;
+  background: var(--cyan);
+  border-color: var(--cyan);
 }
 
 .vh-brand small {
@@ -905,5 +928,214 @@ html.valorant-route * {
 @media (prefers-reduced-motion: reduce) {
   .vh-glitch {
     display: none;
+  }
+}
+
+/* --------------------------------------------------------- Settings menu */
+.vs-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  pointer-events: auto;
+  background: rgba(5, 7, 10, 0.72);
+  font-family: 'Barlow Condensed', Bahnschrift, sans-serif;
+}
+
+.vs-panel {
+  display: flex;
+  flex-direction: column;
+  width: min(920px, 100%);
+  min-height: min(520px, calc(100vh - 56px));
+  background: rgba(8, 12, 16, 0.96);
+  border: 1px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
+}
+
+.vs-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 22px 28px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.85);
+}
+
+.vs-kicker {
+  color: var(--cyan);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.34em;
+}
+
+.vs-header h2 {
+  margin: 0;
+  font-size: 42px;
+  font-weight: 700;
+  font-style: italic;
+  letter-spacing: 0.18em;
+  line-height: 1;
+}
+
+.vs-body {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  flex: 1;
+  min-height: 0;
+}
+
+.vs-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 22px 18px;
+  border-right: 1px solid rgba(255, 255, 255, 0.85);
+}
+
+.vs-tab {
+  padding: 14px 16px;
+  color: #ece8e1;
+  font-family: inherit;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+}
+
+.vs-tab.is-active,
+.vs-tab:hover,
+.vs-tab:focus-visible {
+  color: #0b0f14;
+  background: var(--cyan);
+  border-color: var(--cyan);
+}
+
+.vs-options {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 28px 18px;
+}
+
+.vs-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 22px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+.vs-row-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.vs-row-label {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.vs-row-hint {
+  color: rgba(236, 232, 225, 0.62);
+  font-family: 'Barlow', Bahnschrift, sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+.vs-select {
+  min-width: 180px;
+  padding: 10px 14px;
+  color: #ece8e1;
+  font-family: 'Barlow Condensed', Bahnschrift, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  background: #0b0f14;
+  border: 1px solid #fff;
+}
+
+.vs-select:focus-visible {
+  color: #0b0f14;
+  background: var(--cyan);
+  border-color: var(--cyan);
+  outline: none;
+}
+
+.vs-switch {
+  position: relative;
+  width: 64px;
+  height: 30px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid #fff;
+}
+
+.vs-switch-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  background: #fff;
+  transition: transform 0.15s ease;
+}
+
+.vs-switch.is-on {
+  background: var(--cyan);
+  border-color: var(--cyan);
+}
+
+.vs-switch.is-on .vs-switch-knob {
+  background: #0b0f14;
+  transform: translateX(34px);
+}
+
+.vs-close {
+  margin: 0 28px 24px;
+  padding: 16px 18px;
+  color: #ece8e1;
+  font-family: 'Barlow Condensed', Bahnschrift, sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  background: transparent;
+  border: 1px solid #fff;
+}
+
+.vs-close:hover,
+.vs-close:focus-visible {
+  color: #0b0f14;
+  background: var(--cyan);
+  border-color: var(--cyan);
+}
+
+@media (max-width: 720px) {
+  .vs-body {
+    grid-template-columns: 1fr;
+  }
+
+  .vs-tabs {
+    flex-direction: row;
+    border-right: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.85);
+  }
+
+  .vs-tab {
+    flex: 1;
+    text-align: center;
+  }
+
+  .vs-header h2 {
+    font-size: 28px;
+  }
+
+  .vs-row {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }

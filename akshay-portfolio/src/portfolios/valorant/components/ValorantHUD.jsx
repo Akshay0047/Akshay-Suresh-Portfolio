@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useCameraRig } from './CameraController.jsx';
+import SettingsMenu from './SettingsMenu.jsx';
+import { useSettingsStore } from '../store/useSettingsStore.js';
 import {
   about, arsenalSlots, attackPower, chapters, contact, memories, profile, projects, skillCategories,
 } from '../data.js';
@@ -230,6 +232,7 @@ const PANELS = { home: HomePanel, projects: ProjectsPanel, skills: SkillsPanel, 
 export default function ValorantHUD({ ready }) {
   const { section, settled, goTo } = useCameraRig();
   const [glitchKey, setGlitchKey] = useState(0);
+  const settingsOpen = useSettingsStore((state) => state.settingsOpen);
 
   // Glitch flash whenever the camera starts a new flight.
   useEffect(() => {
@@ -239,6 +242,7 @@ export default function ValorantHUD({ ready }) {
   useEffect(() => {
     if (!ready) return undefined;
     const onKey = (event) => {
+      if (useSettingsStore.getState().settingsOpen) return;
       const match = SECTIONS.find((item) => item.key === event.key);
       if (match) goTo(match.id);
     };
@@ -289,6 +293,32 @@ export default function ValorantHUD({ ready }) {
       <div className="vh-status" aria-live="polite">
         {settled ? `LOCKED // ${SECTIONS.find((item) => item.id === section)?.tag}` : 'REPOSITIONING...'}
       </div>
+
+      <button
+        type="button"
+        className="vh-gear"
+        aria-label="Open settings"
+        data-testid="settings-gear"
+        onClick={() => useSettingsStore.getState().openSettings()}
+      >
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+          <path
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z"
+          />
+          <path
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinejoin="round"
+            d="M19.4 13.1a7.6 7.6 0 0 0 .05-2.2l1.85-1.15-1.9-3.3-2.15.55a7.7 7.7 0 0 0-1.9-1.1L14.8 3.4h-3.6l-.55 2.5a7.7 7.7 0 0 0-1.9 1.1l-2.15-.55-1.9 3.3L6.55 10.9a7.6 7.6 0 0 0 0 2.2l-1.85 1.15 1.9 3.3 2.15-.55c.56.46 1.2.84 1.9 1.1l.55 2.5h3.6l.55-2.5c.7-.26 1.34-.64 1.9-1.1l2.15.55 1.9-3.3-1.85-1.15Z"
+          />
+        </svg>
+      </button>
+
+      {settingsOpen && <SettingsMenu />}
     </div>
   );
 }
