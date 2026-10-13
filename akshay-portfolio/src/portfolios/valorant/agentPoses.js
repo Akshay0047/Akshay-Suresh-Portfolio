@@ -1,141 +1,156 @@
-import * as THREE from 'three';
-
 /*
- * The agent GLBs are exported in bind pose (no animation clips), so poses are
- * driven procedurally. All rotations are expressed about world axes and then
- * converted into each bone's parent frame, which makes the code independent of
- * the rig's (very inconsistent) local bone axes:
- *
- *     local = conj(P) * R * P * restLocal        (P = parent's current world quat)
- *
- * Angle convention about the character's lateral axis (+X in the model):
- *   hips / shoulders / elbows  + = swing forward (model forward is -Z)
- *   knees                      - = bend backward
- *   lean                       - = torso leans forward
+ * Pose generators for the cast. Each returns a spec for agentRig.applyPose().
+ * Character space is [left, up, forward] in metres from the floor point under
+ * the agent; "right" is therefore negative on the first axis.
  */
 
-const BONES = [
-  'Spine1',
-  'Neck',
-  'L_Hip', 'R_Hip', 'L_Knee', 'R_Knee', 'L_Foot', 'R_Foot',
-  'L_Shoulder', 'R_Shoulder', 'L_Elbow', 'R_Elbow',
-];
+const TAU = Math.PI * 2;
+const ease = (k) => k * k * (3 - 2 * k);
 
-const scratch = {
-  parent: new THREE.Quaternion(),
-  parentInv: new THREE.Quaternion(),
-  rotation: new THREE.Quaternion(),
-  root: new THREE.Quaternion(),
-  lateral: new THREE.Vector3(),
-  up: new THREE.Vector3(0, 1, 0),
-};
-
-export function createRig(model) {
-  const bones = {};
-  model.traverse((object) => {
-    if (object.isBone && BONES.includes(object.name)) {
-      bones[object.name] = { bone: object, rest: object.quaternion.clone() };
-    }
-  });
-  return bones;
-}
-
-function rotateBone(entry, axis, angle) {
-  if (!entry || !angle) {
-    if (entry) entry.bone.quaternion.copy(entry.rest);
-    return;
+/** One leg of a running cycle. `p` in [0, 1): stance (foot back) then swing (foot forward). */
+function runLeg(p, stride, lift, stanceShare = 0.42) {
+  const front = stride;
+  const back = -stride;
+  if (p < stanceShare) {
+    const k = p / stanceShare;
+    return { forward: front + (back - front) * k, up: 0, pitch: 0 };
   }
-  const { bone, rest } = entry;
-  bone.parent.updateWorldMatrix(true, false);
-  bone.parent.getWorldQuaternion(scratch.parent);
-  scratch.parentInv.copy(scratch.parent).invert();
-  scratch.rotation.setFromAxisAngle(axis, angle);
-  bone.quaternion
-    .copy(scratch.parentInv)
-    .multiply(scratch.rotation)
-    .multiply(scratch.parent)
-    .multiply(rest);
-}
-
-/** pose: { lean, headYaw, hips:[l,r], knees:[l,r], shoulders:[l,r], elbows:[l,r], armSpread:[l,r] } */
-export function applyPose(rig, rootObject, pose) {
-  if (!rig.L_Hip) return;
-  rootObject.getWorldQuaternion(scratch.root);
-  scratch.lateral.set(1, 0, 0).applyQuaternion(scratch.root);
-  const lateral = scratch.lateral;
-
-  // Parents first so children read the already-posed parent transform.
-  rotateBone(rig.Spine1, lateral, pose.lean ?? 0);
-  rotateBone(rig.Neck, scratch.up, pose.headYaw ?? 0);
-
-  const [hipL, hipR] = pose.hips ?? [0, 0];
-  const [kneeL, kneeR] = pose.knees ?? [0, 0];
-  rotateBone(rig.L_Hip, lateral, hipL);
-  rotateBone(rig.R_Hip, lateral, hipR);
-  rotateBone(rig.L_Knee, lateral, kneeL);
-  rotateBone(rig.R_Knee, lateral, kneeR);
-  // Keep the feet level: undo the accumulated shin rotation.
-  rotateBone(rig.L_Foot, lateral, -(hipL + kneeL) * 0.85);
-  rotateBone(rig.R_Foot, lateral, -(hipR + kneeR) * 0.85);
-
-  const [shL, shR] = pose.shoulders ?? [0, 0];
-  const [elL, elR] = pose.elbows ?? [0, 0];
-  rotateBone(rig.L_Shoulder, lateral, shL);
-  rotateBone(rig.R_Shoulder, lateral, shR);
-  rotateBone(rig.L_Elbow, lateral, elL);
-  rotateBone(rig.R_Elbow, lateral, elR);
-}
-
-/* ----------------------------------------------------------------- Presets */
-
-/** Rushing agent: forward-leaning sprint cycle, in place. */
-export function sprintPose(t) {
-  const phase = t * 9.5;
-  const s = Math.sin(phase);
-  const c = Math.cos(phase);
+  const k = (p - stanceShare) / (1 - stanceShare);
+  const swing = ease(k);
   return {
-    pose: {
-      lean: -0.38,
-      headYaw: 0,
-      hips: [s * 0.95 + 0.15, -s * 0.95 + 0.15],
-      knees: [-(0.75 - c * 0.55), -(0.75 + c * 0.55)],
-      shoulders: [-s * 0.9, s * 0.9],
-      elbows: [1.35 + c * 0.2, 1.35 - c * 0.2],
-    },
-    bodyY: Math.abs(s) * 0.09 - 0.06,
-    bodyZ: 0,
+    forward: back + (front - back) * swing,
+    up: Math.sin(Math.PI * k) * lift,
+    // Toe points down as the foot pushes off, then flexes up on the swing.
+    pitch: k < 0.25 ? 0.5 * (1 - k / 0.25) : -0.25 * Math.sin(Math.PI * k),
   };
 }
 
-/** High-ground agent: planted wide stance, slow breathing, head scanning the site. */
-export function overwatchPose(t) {
+/**
+ * Tight athletic sprint with the rifle carried across the body in a low-ready hold.
+ * Spine leans ~14 degrees forward, knees drive, torso counter-rotates against the hips.
+ */
+export function sprintPose(t, { phase = 0, aimAt, lookAt, cadence = 2.9 } = {}) {
+  const w = t * cadence + phase;
+  const wrap = (v) => ((v % 1) + 1) % 1;
+  const left = runLeg(wrap(w), 0.46, 0.34);
+  const right = runLeg(wrap(w + 0.5), 0.46, 0.34);
+  const bob = Math.cos(w * TAU * 2) * 0.035;
+  const sway = Math.sin(w * TAU) * 0.03;
   return {
-    pose: {
-      lean: -0.04 + Math.sin(t * 1.4) * 0.012,
-      headYaw: Math.sin(t * 0.45) * 0.5,
-      hips: [0.08, -0.06],
-      knees: [-0.12, -0.08],
-      shoulders: [0.1 + Math.sin(t * 1.4) * 0.02, 0.12 - Math.sin(t * 1.4) * 0.02],
-      elbows: [0.55, 0.62],
+    hips: [0, -0.09 + bob, 0.1],
+    lean: 0.245, // 14 degrees
+    twist: Math.sin(w * TAU) * 0.1,
+    roll: Math.sin(w * TAU) * 0.04,
+    feet: {
+      L: { p: [0.115, left.up, left.forward], pitch: left.pitch },
+      R: { p: [-0.115, right.up, right.forward], pitch: right.pitch },
     },
-    bodyY: 0,
-    bodyZ: 0,
+    kneePoles: { L: [0.1, 0, 1], R: [-0.1, 0, 1] },
+    weapon: {
+      pos: [-0.14 + sway, 1.1 + bob * 0.8, 0.3],
+      aimAt,
+      aimDir: aimAt ? undefined : [0, -0.12, 1],
+      palm: [-0.03, -0.085],
+    },
+    poles: { L: [0.9, -0.5, -0.4], R: [-0.9, -0.5, -0.4] },
+    lookAt,
   };
 }
 
-/** Lurking agent: low crouch behind cover, leaning out to peek. */
-export function crouchPose(t) {
-  const peek = (Math.sin(t * 0.5) + 1) / 2;
+/** Planted two-handed aim-down-sights; used by the defender and overwatch agents. */
+export function adsPose(t, { aimAt, lookAt, breathe = 0.006, stance = 0, kneel = 0 } = {}) {
+  const b = Math.sin(t * 1.3);
   return {
-    pose: {
-      lean: -0.28 - peek * 0.1,
-      headYaw: -0.35 + Math.sin(t * 0.8) * 0.08,
-      hips: [1.0, 0.9],
-      knees: [-1.95, -1.8],
-      shoulders: [0.5, 0.55],
-      elbows: [1.1, 1.0],
+    hips: [0, -0.04 - kneel, 0.03],
+    lean: 0.07 + b * 0.004,
+    twist: 0.1,
+    feet: {
+      L: { p: [0.2 + stance, 0, 0.16], pitch: 0 },
+      R: { p: [-0.16, 0, -0.2], pitch: 0 },
     },
-    bodyY: -0.45,
-    bodyZ: 0,
+    kneePoles: { L: [0.2, 0, 1], R: [-0.2, 0, 1] },
+    weapon: { pos: [-0.075, 1.48 + b * breathe, 0.2], aimAt, palm: [-0.03, -0.085] },
+    poles: { L: [0.7, -0.9, -0.3], R: [-0.9, -0.7, -0.3] },
+    lookAt: lookAt ?? aimAt,
+  };
+}
+
+/** Low-ready: rifle lowered across the body, eyes up, weight forward and ready to peek. */
+export function lowReadyPose(t, { aimAt, lookAt } = {}) {
+  const b = Math.sin(t * 1.1);
+  return {
+    hips: [0, -0.1, 0.05],
+    lean: 0.16,
+    twist: 0.08,
+    feet: {
+      L: { p: [0.19, 0, 0.3], pitch: 0 },
+      R: { p: [-0.17, 0, -0.18], pitch: 0.15 },
+    },
+    kneePoles: { L: [0.2, 0, 1], R: [-0.2, 0, 1] },
+    weapon: { pos: [-0.12, 1.08 + b * 0.008, 0.24], aimAt, palm: [-0.03, -0.085] },
+    poles: { L: [0.8, -0.8, -0.3], R: [-0.9, -0.6, -0.4] },
+    lookAt,
+  };
+}
+
+/**
+ * Grounded tactical crouch behind cover. Hips sit low over a wide, staggered base,
+ * back stays long, and the gun comes up in a compact peek.
+ */
+export function crouchPose(t, { aimAt, lookAt } = {}) {
+  const b = Math.sin(t * 1.2);
+  return {
+    hips: [0, -0.68, -0.08],
+    lean: 0.34,
+    twist: 0.12,
+    feet: {
+      L: { p: [0.24, 0, 0.2], pitch: 0 },
+      R: { p: [-0.2, 0.0, -0.16], pitch: 0.35 },
+    },
+    kneePoles: { L: [0.5, 0, 1], R: [-0.5, 0, 1] },
+    weapon: { pos: [-0.09, 0.88 + b * 0.006, 0.3], aimAt, palm: [-0.03, -0.085] },
+    poles: { L: [0.9, -0.6, -0.3], R: [-0.9, -0.6, -0.3] },
+    lookAt,
+  };
+}
+
+/** Blade Storm: airborne, back arm swept wide, throwing arm locked onto the target. */
+export function ultPose(t, { aimAt, lookAt } = {}) {
+  const hover = Math.sin(t * 1.5) * 0.14;
+  const flutter = Math.sin(t * 2.4) * 0.05;
+  return {
+    hips: [0, 0.0 + hover, -0.06],
+    lean: -0.1,
+    twist: 0.28,
+    roll: 0.06 + flutter,
+    feet: {
+      L: { p: [0.14, 0.34 + hover + flutter, 0.38], pitch: 0.55 },
+      R: { p: [-0.14, 0.2 + hover - flutter, -0.3], pitch: 0.9 },
+    },
+    kneePoles: { L: [0.3, 0, 1], R: [-0.3, 0, 1] },
+    weapon: { pos: [-0.3, 1.5 + hover, 0.5], aimAt, left: false, palm: [-0.04, -0.01] },
+    hands: { L: [0.62, 1.3 + hover + flutter, -0.35] },
+    poles: { L: [1, -0.2, -0.5], R: [-0.4, -0.2, -1] },
+    handAim: { L: [1, 0.2, -0.3] },
+    lookAt,
+  };
+}
+
+/** Sage: a calm casting stance, both palms forward at chest height. */
+export function castPose(t, { lookAt } = {}) {
+  const b = Math.sin(t * 1.2);
+  return {
+    hips: [0, -0.05, 0.02],
+    lean: 0.04,
+    twist: -0.1,
+    feet: {
+      L: { p: [0.17, 0, 0.1], pitch: 0 },
+      R: { p: [-0.17, 0, -0.16], pitch: 0 },
+    },
+    kneePoles: { L: [0.2, 0, 1], R: [-0.2, 0, 1] },
+    hands: { L: [0.26, 1.28 + b * 0.015, 0.5], R: [-0.24, 1.36 - b * 0.015, 0.46] },
+    handAim: { L: [0.05, 0.1, 1], R: [-0.05, 0.1, 1] },
+    poles: { L: [0.8, -0.8, -0.1], R: [-0.8, -0.8, -0.1] },
+    lookAt,
   };
 }

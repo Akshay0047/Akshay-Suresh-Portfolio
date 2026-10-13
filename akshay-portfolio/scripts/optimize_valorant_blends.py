@@ -33,11 +33,29 @@ DECIMATE_RATIO = 0.6
 # (source blend, output glb, max texture edge in px, export skeleton/skins)
 JOBS = (
     ("havenA.blend", "map_site.glb", 512, True),
-    ("neonSimple.blend", "agent_rushing.glb", 1024, True),
-    ("sovaSimple.blend", "agent_highground.glb", 1024, True),
-    ("gekkoSimple.blend", "agent_lurking.glb", 1024, True),
+    # Agents (shared UE skeleton: Spine1-4, L_/R_Hip/Knee/Foot, L_/R_Shoulder/Elbow/Hand, R_WeaponPoint ...)
+    ("neonSimple.blend", "agent_neon.glb", 1024, True),
+    ("jettSimple.blend", "agent_jett.glb", 1024, True),
+    ("reynaSimple.blend", "agent_reyna.glb", 1024, True),
+    ("phoenixSimple.blend", "agent_phoenix.glb", 1024, True),
+    ("sageSimple.blend", "agent_sage.glb", 1024, True),
+    ("sovaSimple.blend", "agent_sova.glb", 1024, True),
+    ("gekkoSimple.blend", "agent_gekko.glb", 1024, True),
+    ("chamberSimple.blend", "agent_chamber.glb", 1024, True),
+    ("cypherComplex.blend", "agent_cypher.glb", 1024, True),
+    # Weapons / props. Armature bones (Muzzle, Trigger, Left_Hand_Target ...) stay as glTF nodes.
     ("aristocratVandal.blend", "vandal_gun.glb", 1024, False),
+    ("Phantom.blend", "phantom_gun.glb", 1024, False),
+    ("aerosolOperator.blend", "operator_gun.glb", 1024, False),
+    ("jettKnife.blend", "jett_knife.glb", 1024, False),
+    ("sageUltFriendly.blend", "sage_ult.glb", 1024, False),
 )
+
+# Allow `-- name1.glb name2.glb` on the command line to run only some jobs.
+if "--" in sys.argv:
+    _only = set(sys.argv[sys.argv.index("--") + 1 :])
+    if _only:
+        JOBS = tuple(job for job in JOBS if job[1] in _only)
 
 
 def ensure_object_mode():
@@ -65,6 +83,34 @@ def downscale_textures(max_edge):
         except RuntimeError as exc:
             print(f"TEXTURE_SKIP {image.name} {exc}")
     return scaled
+
+
+def drop_shape_keys():
+    """Facial morph targets are unused on the web and block applying Decimate."""
+    dropped = 0
+    for obj in mesh_objects():
+        if obj.data.shape_keys is not None and obj.data.users == 1:
+            bpy.context.view_layer.objects.active = obj
+            obj.shape_key_clear()
+            dropped += 1
+    return dropped
+
+
+def bake_prop_transforms():
+    """Apply loc/rot/scale on parentless, unrigged meshes so their pivot is [0, 0, 0]."""
+    ensure_object_mode()
+    baked = 0
+    for obj in mesh_objects():
+        if obj.parent is not None or obj.data.users > 1:
+            continue
+        if any(mod.type == "ARMATURE" for mod in obj.modifiers):
+            continue
+        bpy.ops.object.select_all(action="DESELECT")
+        obj.select_set(True)
+        bpy.context.view_layer.objects.active = obj
+        bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+        baked += 1
+    return baked
 
 
 def decimate_all_meshes(ratio):
@@ -133,6 +179,9 @@ def process(blend_name, out_name, max_texture, export_skins):
 
     before = sum(len(obj.data.vertices) for obj in mesh_objects())
     scaled = downscale_textures(max_texture)
+    drop_shape_keys()
+    if not any(obj.type == "ARMATURE" for obj in bpy.data.objects):
+        bake_prop_transforms()
     applied, deferred = decimate_all_meshes(DECIMATE_RATIO)
     bones = [bone.name for obj in bpy.data.objects if obj.type == "ARMATURE" for bone in obj.data.bones]
     low, high = world_bounds()

@@ -631,6 +631,135 @@ html.valorant-route * {
   letter-spacing: 0.05em;
 }
 
+/* Arsenal extras */
+.vp-tabs button {
+  display: grid;
+  gap: 1px;
+  text-align: left;
+}
+
+.vp-tabs button small {
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: var(--cyan);
+}
+
+.vp-tabs button.is-active small {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.vp-tabs button b {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.vp-spec {
+  margin: 0;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-left: 2px solid var(--red);
+  font-size: 13px;
+  color: rgba(236, 232, 225, 0.7);
+}
+
+.vp-spec span {
+  margin-right: 8px;
+  font-family: 'Barlow Condensed', sans-serif;
+  letter-spacing: 0.22em;
+  color: var(--red);
+}
+
+.vp-callout {
+  margin: 0;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.3em;
+  color: rgba(236, 232, 225, 0.55);
+}
+
+.vp-callout b {
+  margin-left: 10px;
+  color: var(--cyan);
+  letter-spacing: 0.2em;
+}
+
+/* Dossier chapters */
+.vp-chapter {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border-left: 2px solid var(--red);
+}
+
+.vp-chapter header {
+  display: grid;
+  gap: 2px;
+}
+
+.vp-chapter header b {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 22px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.vp-mini {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.vp-mini b {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 15px;
+  letter-spacing: 0.05em;
+}
+
+.vp-mini-projects {
+  padding-top: 6px;
+  border-top: 1px dashed rgba(0, 255, 255, 0.25);
+}
+
+/* Comms */
+.vp-channels {
+  display: grid;
+  gap: 10px;
+}
+
+.vp-channel {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  color: inherit;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.04);
+  border-left: 2px solid var(--cyan);
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.vp-channel:hover {
+  background: rgba(0, 255, 255, 0.12);
+  transform: translateX(4px);
+}
+
+.vp-channel span {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  color: rgba(236, 232, 225, 0.5);
+}
+
+.vp-channel b {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 22px;
+  letter-spacing: 0.06em;
+}
+
 /* ---------------------------------------------------------------- Crosshair */
 .vc-crosshair {
   --gap: 6px;

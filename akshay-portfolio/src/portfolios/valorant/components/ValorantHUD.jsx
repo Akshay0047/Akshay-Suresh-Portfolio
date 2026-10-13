@@ -2,13 +2,16 @@ import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useCameraRig } from './CameraController.jsx';
-import { about, contact, memories, profile, projects, skillCategories } from '../data.js';
+import {
+  about, arsenalSlots, attackPower, chapters, contact, memories, profile, projects, skillCategories,
+} from '../data.js';
 
 export const SECTIONS = [
-  { id: 'home', key: '1', label: 'Home', tag: 'OVERVIEW' },
-  { id: 'projects', key: '2', label: 'Projects', tag: 'RUSHING AGENT' },
-  { id: 'skills', key: '3', label: 'Skills', tag: 'HIGHGROUND AGENT' },
-  { id: 'about', key: '4', label: 'About', tag: 'LURKING AGENT' },
+  { id: 'home', key: '1', label: 'Briefing', tag: 'OVERVIEW' },
+  { id: 'projects', key: '2', label: 'Operations', tag: 'NEON // ENTRY DUELIST' },
+  { id: 'skills', key: '3', label: 'Arsenal', tag: 'CHAMBER // LOADOUT' },
+  { id: 'about', key: '4', label: 'Dossier', tag: 'CYPHER // HEAVEN' },
+  { id: 'comms', key: '5', label: 'Comms', tag: 'JETT // BLADE STORM' },
 ];
 
 const panelMotion = {
@@ -27,32 +30,42 @@ function PanelHeader({ code, title, kicker }) {
   );
 }
 
+function ContactButtons() {
+  return (
+    <div className="vp-actions">
+      <a className="vp-button vp-button-solid" href={`mailto:${profile.email}`}>EMAIL</a>
+      <a className="vp-button" href={profile.github} target="_blank" rel="noreferrer">GITHUB</a>
+      <a className="vp-button" href={profile.linkedin} target="_blank" rel="noreferrer">LINKEDIN</a>
+      <a className="vp-button" href={profile.resume} target="_blank" rel="noopener noreferrer">RESUME</a>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------- Briefing */
 function HomePanel() {
   return (
     <div className="vp-body vp-home">
-      <PanelHeader code="00 // OVERVIEW" kicker="INITIATOR // PORTFOLIO" title={profile.name} />
+      <PanelHeader code="00 // BRIEFING" kicker="INITIATOR // PORTFOLIO" title={profile.name} />
       <p className="vp-role">{profile.role}</p>
       <p className="vp-meta">{profile.location}</p>
       <p className="vp-lead">{about.lead}</p>
-      <div className="vp-actions">
-        <a className="vp-button" href={profile.github} target="_blank" rel="noreferrer">GITHUB</a>
-        <a className="vp-button" href={profile.linkedin} target="_blank" rel="noreferrer">LINKEDIN</a>
-        <a className="vp-button vp-button-solid" href={profile.resume} target="_blank" rel="noopener noreferrer">RESUME</a>
-      </div>
+      <p className="vp-muted">{about.body}</p>
+      <ContactButtons />
       <p className="vp-hint">Pick a sector on the left. Click the Vandal to inspect it.</p>
     </div>
   );
 }
 
+/* -------------------------------------------------------------- Operations */
 function ProjectsPanel() {
   const [open, setOpen] = useState(0);
   return (
     <div className="vp-body">
-      <PanelHeader code="01 // RUSHING AGENT" kicker="SELECTED WORK" title="Projects" />
-      <ul className="vp-list vp-scroll">
+      <PanelHeader code="01 // NEON — ENTRY DUELIST" kicker="OPERATIONS // SELECTED WORK" title="Operations" />
+      <ul className="vp-list vp-scroll" data-testid="project-list">
         {projects.map((project, index) => (
           <li key={project.index} className={`vp-card ${open === index ? 'is-open' : ''}`}>
-            <button type="button" className="vp-card-head" onClick={() => setOpen(open === index ? -1 : index)}>
+            <button type="button" className="vp-card-head" aria-expanded={open === index} onClick={() => setOpen(open === index ? -1 : index)}>
               <span className="vp-card-index">{project.index}</span>
               <span className="vp-card-title">{project.title}</span>
               <span className="vp-card-meta">{project.year} · {project.metric}</span>
@@ -65,8 +78,10 @@ function ProjectsPanel() {
                 <div className="vp-chips">
                   {project.stack.map((item) => <span key={item}>{item}</span>)}
                 </div>
-                {project.repoUrl && (
-                  <a className="vp-button" href={project.repoUrl} target="_blank" rel="noreferrer">VIEW REPOSITORY</a>
+                {project.repoUrl ? (
+                  <a className="vp-button vp-button-solid" href={project.repoUrl} target="_blank" rel="noreferrer">VIEW REPOSITORY</a>
+                ) : (
+                  <a className="vp-button" href={profile.github} target="_blank" rel="noreferrer">MORE ON GITHUB</a>
                 )}
               </div>
             )}
@@ -77,12 +92,14 @@ function ProjectsPanel() {
   );
 }
 
+/* ----------------------------------------------------------------- Arsenal */
 function SkillsPanel() {
   const categories = Object.keys(skillCategories);
   const [active, setActive] = useState(categories[0]);
+  const slot = arsenalSlots[active];
   return (
     <div className="vp-body">
-      <PanelHeader code="02 // HIGHGROUND AGENT" kicker="LOADOUT" title="Skills" />
+      <PanelHeader code="02 // CHAMBER — ARSENAL" kicker="LOADOUT // SKILLS" title="Arsenal" />
       <div className="vp-tabs" role="tablist">
         {categories.map((category) => (
           <button
@@ -93,10 +110,17 @@ function SkillsPanel() {
             className={active === category ? 'is-active' : ''}
             onClick={() => setActive(category)}
           >
+            <small>{arsenalSlots[category]?.slot}</small>
             {category}
+            <b>{skillCategories[category].length}</b>
           </button>
         ))}
       </div>
+      {slot && (
+        <p className="vp-spec">
+          <span>{slot.slot} // {slot.weapon}</span> {slot.spec}
+        </p>
+      )}
       <ul className="vp-skills vp-scroll">
         {skillCategories[active].map((skill, index) => (
           <li key={`${active}-${skill.name}`}>
@@ -115,15 +139,17 @@ function SkillsPanel() {
           </li>
         ))}
       </ul>
+      <p className="vp-callout">{attackPower.label} <b>{attackPower.value}</b></p>
     </div>
   );
 }
 
+/* ----------------------------------------------------------------- Dossier */
 function AboutPanel() {
   return (
     <div className="vp-body">
-      <PanelHeader code="03 // LURKING AGENT" kicker={about.kicker} title={about.headline} />
-      <div className="vp-scroll vp-about">
+      <PanelHeader code="03 // CYPHER — HEAVEN ANCHOR" kicker={about.kicker} title={about.headline} />
+      <div className="vp-scroll vp-about" data-testid="dossier-scroll">
         <p className="vp-lead">{about.lead}</p>
         <p>{about.body}</p>
         <dl className="vp-facts">
@@ -134,6 +160,34 @@ function AboutPanel() {
             </div>
           ))}
         </dl>
+
+        <h3 className="vp-subhead">Career chapters</h3>
+        {chapters.map((chapter) => (
+          <article key={chapter.id} className="vp-chapter">
+            <header>
+              <span className="vp-time">{chapter.slot} · {chapter.status} · {chapter.year}</span>
+              <b>{chapter.title}</b>
+            </header>
+            <p>{chapter.summary}</p>
+            <p className="vp-muted">{chapter.background}</p>
+            <ul className="vp-mini">
+              {chapter.timeline.map((entry) => (
+                <li key={`${entry.date}-${entry.title}`}>
+                  <span className="vp-time">{entry.date}</span> <b>{entry.title}</b>
+                  <span className="vp-muted"> — {entry.detail}</span>
+                </li>
+              ))}
+            </ul>
+            <ul className="vp-mini vp-mini-projects">
+              {chapter.projects.map((project) => (
+                <li key={project.name}>
+                  <b>{project.name}</b> <span className="vp-time">{project.stack}</span>
+                  <span className="vp-muted"> — {project.detail}</span>
+                </li>
+              ))}
+            </ul>
+          </article>
+        ))}
 
         <h3 className="vp-subhead">Chronicle</h3>
         <ol className="vp-timeline">
@@ -146,19 +200,32 @@ function AboutPanel() {
             </li>
           ))}
         </ol>
-
-        <h3 className="vp-subhead">{contact.kicker}</h3>
-        <p className="vp-muted">{contact.lead}</p>
-        <div className="vp-actions">
-          <a className="vp-button vp-button-solid" href={`mailto:${profile.email}`}>{profile.email}</a>
-          <a className="vp-button" href={`tel:${profile.phone.replace(/\s/g, '')}`}>{profile.phone}</a>
-        </div>
       </div>
     </div>
   );
 }
 
-const PANELS = { home: HomePanel, projects: ProjectsPanel, skills: SkillsPanel, about: AboutPanel };
+/* ------------------------------------------------------------------- Comms */
+function CommsPanel() {
+  return (
+    <div className="vp-body">
+      <PanelHeader code="04 // JETT — BLADE STORM" kicker={contact.kicker} title={contact.headline} />
+      <p className="vp-lead">{contact.lead}</p>
+      <div className="vp-channels">
+        {contact.channels.map((channel) => (
+          <a key={channel.label} className="vp-channel" href={channel.href}>
+            <span>{channel.label}</span>
+            <b>{channel.value}</b>
+          </a>
+        ))}
+      </div>
+      <ContactButtons />
+      <p className="vp-meta">{profile.location} · {profile.origin}</p>
+    </div>
+  );
+}
+
+const PANELS = { home: HomePanel, projects: ProjectsPanel, skills: SkillsPanel, about: AboutPanel, comms: CommsPanel };
 
 export default function ValorantHUD({ ready }) {
   const { section, settled, goTo } = useCameraRig();

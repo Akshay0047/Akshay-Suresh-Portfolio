@@ -35,10 +35,14 @@ export function useCameraRig() {
 /*  Camera controller                                                           */
 /* -------------------------------------------------------------------------- */
 
-const PULL_BACK = 15; // metres above the higher of the two endpoints
-const RISE_DURATION = 1.5;
-const PUSH_DURATION = 1.9;
+// The tallest structure around the site (A tower) peaks at y ~ 37-44, so every
+// transition cruises above this altitude before descending into a target room.
+const CRUISE_Y = 52;
+const RISE_DURATION = 1.1;
+const TRAVERSE_DURATION = 1.3;
+const DESCEND_DURATION = 1.7;
 const SETTLE_DELAY = 0.25;
+const CLEARANCE = 0.5; // metres kept between the camera and any surface (near plane is 0.1)
 
 /** Position on the orbit circle for an angle (Math.sin / Math.cos). */
 function orbitPosition(out, orbit, angle) {
@@ -58,19 +62,28 @@ function orbitPosition(out, orbit, angle) {
  *   arc     - half-width of the orbit sweep (radians) so it never clips walls
  *   speed   - orbit speed (radians of phase per second)
  */
-export default function CameraController({ sections, rig, enabled = true }) {
+export default function CameraController({ sections, rig, enabled = true, getCollider }) {
   const { camera, clock } = useThree();
   const { setSection, setSettled, goToRef } = rig;
 
   // Dummy look target - camera.lookAt(lookAtTarget) runs every frame.
   const lookAtTarget = useMemo(() => new THREE.Vector3(), []);
   const scratch = useMemo(() => new THREE.Vector3(), []);
-  const runtime = useRef({ timeline: null, orbit: null, orbitStart: 0 });
+  const runtime = useRef({ timeline: null, orbit: null, orbitStart: 0, lastSafe: new THREE.Vector3(), hasSafe: false });
+  const caster = useMemo(() => {
+    const raycaster = new THREE.Raycaster();
+    raycaster.firstHitOnly = true;
+    return raycaster;
+  }, []);
+  const sweep = useMemo(() => ({ dir: new THREE.Vector3(), from: new THREE.Vector3(), to: new THREE.Vector3() }), []);
 
   /**
    * moveToSection(targetPos, targetLookAt)
-   * Never lerps through geometry: step 1 pulls the camera up and back to a
-   * high waypoint (so it flies over the walls), step 2 pushes into targetPos.
+   * Never lerps through geometry. The flight is three legs:
+   *   1. rise straight up to cruise altitude (above every wall and roof),
+   *   2. traverse horizontally to the point above the destination,
+   *   3. descend onto targetPos.
+   * A per-frame swept-collision guard (see useFrame) backs this up.
    */
   const moveToSection = useCallback(
     (targetPos, targetLookAt, { orbit = null, onArrive } = {}) => {
@@ -79,9 +92,10 @@ export default function CameraController({ sections, rig, enabled = true }) {
       rt.orbit = null;
 
       const start = camera.position.clone();
-      const highY = Math.max(start.y, targetPos.y) + PULL_BACK;
-      const waypoint = start.clone().lerp(targetPos, 0.5);
-      waypoint.y = highY;
+      const cruise = Math.max(CRUISE_Y, start.y, targetPos.y);
+      const above = (point) => new THREE.Vector3(point.x, cruise, point.z);
+      const liftStart = above(start);
+      const liftTarget = above(targetPos);
       const lookMid = lookAtTarget.clone().lerp(targetLookAt, 0.5);
 
       const timeline = gsap.timeline({
@@ -92,33 +106,20 @@ export default function CameraController({ sections, rig, enabled = true }) {
         },
       });
 
-      // Step 1 - pull back to the high-altitude waypoint.
-      timeline.to(camera.position, {
-        x: waypoint.x,
-        y: waypoint.y,
-        z: waypoint.z,
-        duration: RISE_DURATION,
-        ease: 'power2.inOut',
-      });
-      timeline.to(
-        lookAtTarget,
-        { x: lookMid.x, y: lookMid.y, z: lookMid.z, duration: RISE_DURATION, ease: 'power2.inOut' },
-        0,
-      );
+      const move = (to, duration, ease) => timeline.to(camera.position, { x: to.x, y: to.y, z: to.z, duration, ease });
+      const look = (to, duration, ease, at) =>
+        timeline.to(lookAtTarget, { x: to.x, y: to.y, z: to.z, duration, ease }, at);
 
-      // Step 2 - push into the final position.
-      timeline.to(camera.position, {
-        x: targetPos.x,
-        y: targetPos.y,
-        z: targetPos.z,
-        duration: PUSH_DURATION,
-        ease: 'power3.inOut',
-      });
-      timeline.to(
-        lookAtTarget,
-        { x: targetLookAt.x, y: targetLookAt.y, z: targetLookAt.z, duration: PUSH_DURATION, ease: 'power3.inOut' },
-        RISE_DURATION,
-      );
+      // Leg 1 - rise out of whatever room/lane we are in (skipped if already cruising).
+      const alreadyHigh = start.y >= cruise - 0.5;
+      const riseTime = alreadyHigh ? 0.01 : RISE_DURATION;
+      move(liftStart, riseTime, 'power2.in');
+      // Leg 2 - fly over the rooftops; the look target sweeps to the destination.
+      move(liftTarget, TRAVERSE_DURATION, 'power1.inOut');
+      look(lookMid, TRAVERSE_DURATION, 'power1.inOut', riseTime);
+      // Leg 3 - drop into the target.
+      move(targetPos, DESCEND_DURATION, 'power3.inOut');
+      look(targetLookAt, DESCEND_DURATION, 'power3.inOut', riseTime + TRAVERSE_DURATION);
 
       rt.timeline = timeline;
       return timeline;
@@ -162,6 +163,14 @@ export default function CameraController({ sections, rig, enabled = true }) {
   }, [enabled, sections, camera, lookAtTarget, goToSection]);
 
   useEffect(() => {
+    // Test hook: window.__cameraStats.blocked counts frames the collision guard intervened.
+    window.__cameraStats = runtime.current;
+    return () => {
+      delete window.__cameraStats;
+    };
+  }, []);
+
+  useEffect(() => {
     const rt = runtime.current;
     // Keep flights wall-clock accurate even if a frame hitches (shader compiles,
     // slow GPUs) instead of GSAP stretching them out.
@@ -184,6 +193,39 @@ export default function CameraController({ sections, rig, enabled = true }) {
       scratch.y += Math.sin(t * 0.55) * 0.12 * ramp;
       camera.position.copy(scratch);
       lookAtTarget.copy(orbit.center);
+    }
+
+    // Swept collision guard: whatever the timeline/orbit asked for, never let the
+    // camera cross (or come within CLEARANCE of) level geometry between frames.
+    const collider = getCollider?.();
+    if (collider) {
+      if (!rt.hasSafe) {
+        rt.lastSafe.copy(camera.position);
+        rt.hasSafe = true;
+      }
+      sweep.from.copy(rt.lastSafe);
+      sweep.to.copy(camera.position);
+      sweep.dir.copy(sweep.to).sub(sweep.from);
+      const length = sweep.dir.length();
+      if (length > 1e-3) {
+        sweep.dir.divideScalar(length);
+        let allowed = length;
+        // Forward ray catches front faces; the reverse ray catches back faces.
+        caster.set(sweep.from, sweep.dir);
+        caster.far = length + CLEARANCE;
+        const forward = caster.intersectObject(collider, true)[0];
+        if (forward) allowed = Math.min(allowed, Math.max(0, forward.distance - CLEARANCE));
+        // (no extra reach here: it would catch surfaces *behind* the starting point)
+        caster.set(sweep.to, sweep.dir.clone().negate());
+        caster.far = length;
+        const backward = caster.intersectObject(collider, true)[0];
+        if (backward) allowed = Math.min(allowed, Math.max(0, length - backward.distance - CLEARANCE));
+        if (allowed < length) {
+          camera.position.copy(sweep.from).addScaledVector(sweep.dir, allowed);
+          rt.blocked = (rt.blocked ?? 0) + 1;
+        }
+      }
+      rt.lastSafe.copy(camera.position);
     }
     camera.lookAt(lookAtTarget);
   });
