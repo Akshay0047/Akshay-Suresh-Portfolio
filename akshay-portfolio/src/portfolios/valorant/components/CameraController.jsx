@@ -35,14 +35,10 @@ export function useCameraRig() {
 /*  Camera controller                                                           */
 /* -------------------------------------------------------------------------- */
 
-// The tallest structure around the site (A tower) peaks at y ~ 37-44, so every
-// transition cruises above this altitude before descending into a target room.
-const CRUISE_Y = 52;
-const RISE_DURATION = 1.1;
-const TRAVERSE_DURATION = 1.3;
-const DESCEND_DURATION = 1.7;
 const SETTLE_DELAY = 0.25;
 const CLEARANCE = 0.5; // metres kept between the camera and any surface (near plane is 0.1)
+// Open courtyard, used only when the straight line between two shots hits geometry.
+const COURTYARD = new THREE.Vector3(63, 0, -95);
 
 /** Position on the orbit circle for an angle (Math.sin / Math.cos). */
 function orbitPosition(out, orbit, angle) {
@@ -76,14 +72,32 @@ export default function CameraController({ sections, rig, enabled = true, getCol
     return raycaster;
   }, []);
   const sweep = useMemo(() => ({ dir: new THREE.Vector3(), from: new THREE.Vector3(), to: new THREE.Vector3() }), []);
+  const colliderRef = useRef(getCollider);
+  colliderRef.current = getCollider;
+  const clearanceRay = useMemo(() => new THREE.Raycaster(), []);
+
+  /** True when the segment crosses map geometry, checked from both ends. */
+  const segmentBlocked = useCallback((from, to) => {
+    const collider = colliderRef.current?.();
+    if (!collider) return false;
+    const delta = sweep.dir.copy(to).sub(from);
+    const length = delta.length();
+    if (length < 0.05) return false;
+    delta.divideScalar(length);
+    clearanceRay.set(from, delta);
+    clearanceRay.near = 0;
+    clearanceRay.far = length;
+    if (clearanceRay.intersectObject(collider, true).length > 0) return true;
+    clearanceRay.set(to, delta.negate());
+    clearanceRay.far = length;
+    return clearanceRay.intersectObject(collider, true).length > 0;
+  }, [clearanceRay, sweep]);
 
   /**
-   * moveToSection(targetPos, targetLookAt)
-   * Never lerps through geometry. The flight is three legs:
-   *   1. rise straight up to cruise altitude (above every wall and roof),
-   *   2. traverse horizontally to the point above the destination,
-   *   3. descend onto targetPos.
-   * A per-frame swept-collision guard (see useFrame) backs this up.
+   * One eased flight from the current shot to the next. Height only changes
+   * between the two cameras — the path does not climb over the roofs and drop
+   * back down. A bend through the courtyard is used only when the straight
+   * line would hit the map, and the look target eases the whole way.
    */
   const moveToSection = useCallback(
     (targetPos, targetLookAt, { orbit = null, onArrive } = {}) => {
@@ -92,11 +106,25 @@ export default function CameraController({ sections, rig, enabled = true, getCol
       rt.orbit = null;
 
       const start = camera.position.clone();
-      const cruise = Math.max(CRUISE_Y, start.y, targetPos.y);
-      const above = (point) => new THREE.Vector3(point.x, cruise, point.z);
-      const liftStart = above(start);
-      const liftTarget = above(targetPos);
-      const lookMid = lookAtTarget.clone().lerp(targetLookAt, 0.5);
+      const startLook = lookAtTarget.clone();
+      const end = targetPos.clone();
+      const endLook = targetLookAt.clone();
+      const y = Math.max(start.y, end.y);
+      const candidates = [
+        new THREE.Vector3(COURTYARD.x, y, COURTYARD.z),
+        new THREE.Vector3(58, y, -90),
+        new THREE.Vector3(68, y, -90),
+        new THREE.Vector3(60, y, -100),
+        new THREE.Vector3(66, y, -88),
+      ];
+      const via = segmentBlocked(start, end)
+        ? candidates.find((point) => !segmentBlocked(start, point) && !segmentBlocked(point, end)) ?? null
+        : null;
+
+      const distance = via ? start.distanceTo(via) + via.distanceTo(end) : start.distanceTo(end);
+      const duration = THREE.MathUtils.clamp(distance / 11, 1.15, 2.2);
+      const points = via ? [start, via, end] : [start, end];
+      const proxy = { t: 0 };
 
       const timeline = gsap.timeline({
         onComplete: () => {
@@ -105,26 +133,24 @@ export default function CameraController({ sections, rig, enabled = true, getCol
           onArrive?.();
         },
       });
-
-      const move = (to, duration, ease) => timeline.to(camera.position, { x: to.x, y: to.y, z: to.z, duration, ease });
-      const look = (to, duration, ease, at) =>
-        timeline.to(lookAtTarget, { x: to.x, y: to.y, z: to.z, duration, ease }, at);
-
-      // Leg 1 - rise out of whatever room/lane we are in (skipped if already cruising).
-      const alreadyHigh = start.y >= cruise - 0.5;
-      const riseTime = alreadyHigh ? 0.01 : RISE_DURATION;
-      move(liftStart, riseTime, 'power2.in');
-      // Leg 2 - fly over the rooftops; the look target sweeps to the destination.
-      move(liftTarget, TRAVERSE_DURATION, 'power1.inOut');
-      look(lookMid, TRAVERSE_DURATION, 'power1.inOut', riseTime);
-      // Leg 3 - drop into the target.
-      move(targetPos, DESCEND_DURATION, 'power3.inOut');
-      look(targetLookAt, DESCEND_DURATION, 'power3.inOut', riseTime + TRAVERSE_DURATION);
+      timeline.to(proxy, {
+        t: 1,
+        duration,
+        ease: 'power2.inOut',
+        onUpdate: () => {
+          const t = proxy.t;
+          const span = points.length - 1;
+          const scaled = Math.min(span - 0.0001, t * span);
+          const index = Math.floor(scaled);
+          camera.position.lerpVectors(points[index], points[index + 1], scaled - index);
+          lookAtTarget.lerpVectors(startLook, endLook, t);
+        },
+      });
 
       rt.timeline = timeline;
       return timeline;
     },
-    [camera, clock, lookAtTarget],
+    [camera, clock, lookAtTarget, segmentBlocked],
   );
 
   const goToSection = useCallback(
@@ -153,9 +179,12 @@ export default function CameraController({ sections, rig, enabled = true, getCol
     };
   }, [goToRef, goToSection]);
 
-  // Cinematic intro: start high above the site, then settle on "home".
+  // Once only. Re-running this when goToSection's identity changes yanks the
+  // camera back to the overview in the middle of a later move.
+  const booted = useRef(false);
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || booted.current) return;
+    booted.current = true;
     const home = sections.home;
     camera.position.set(home.center.x, home.center.y + 60, home.center.z + home.radius * 1.4);
     lookAtTarget.copy(home.center);

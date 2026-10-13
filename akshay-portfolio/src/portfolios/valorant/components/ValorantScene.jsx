@@ -1,6 +1,6 @@
 import { Fragment, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, createPortal, useFrame, useThree } from '@react-three/fiber';
-import { Bvh, Environment, Html, OrbitControls, Outlines, Sky, useGLTF, useProgress } from '@react-three/drei';
+import { Bvh, Environment, Html, OrbitControls, Outlines, useGLTF, useProgress } from '@react-three/drei';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import gsap from 'gsap';
 import * as THREE from 'three';
@@ -86,7 +86,23 @@ function sanitizeMaterial(material) {
       material.depthWrite = true;
     }
   }
-  material.envMapIntensity = 0.7;
+  // Floors, metal and glass pick up the reflection probe. Everything else stays matte
+  // so skin, cloth and plaster do not turn into plastic.
+  const name = material.name || '';
+  if (GLASS_PATTERN.test(name)) {
+    material.roughness = 0.05;
+    material.envMapIntensity = 1.7;
+  } else if (/metal|trim|blade|knife|gun|weapon/i.test(name) && !/nonmetal|wood|cloth|fabric/i.test(name)) {
+    material.roughness = Math.min(material.roughness, 0.28);
+    if (!material.metalnessMap) material.metalness = 0.82;
+    material.envMapIntensity = 1.45;
+  } else if (/floor|ground|tile|slate/i.test(name)) {
+    material.roughness = 0.16;
+    material.metalness = 0;
+    material.envMapIntensity = 1.7;
+  } else {
+    material.envMapIntensity = 0.45;
+  }
   material.needsUpdate = true;
 }
 
@@ -148,6 +164,12 @@ function Agent({ cast }) {
       weaponModel.traverse((object) => {
         if (!object.isMesh) return;
         object.frustumCulled = false;
+        (Array.isArray(object.material) ? object.material : [object.material]).forEach((material) => {
+          if (!material || GLASS_PATTERN.test(material.name)) return;
+          material.roughness = Math.min(material.roughness ?? 1, 0.32);
+          material.metalness = Math.max(material.metalness ?? 0, 0.72);
+          material.envMapIntensity = 1.5;
+        });
         // The Phantom's white skin clips to a flat white silhouette under ACES at
         // exposure 1.25; tame it on a private copy of the material.
         if (cast.weapon === 'phantom' && object.material?.color) {
@@ -207,7 +229,18 @@ function KnifeRing({ center, count = 7, radius = 1.15 }) {
   const { scene } = useGLTF(MODEL_URLS.weapons.knife, true);
   const knives = useMemo(() => Array.from({ length: count }, () => cloneSkinned(scene)), [scene, count]);
   const group = useRef();
-  useLayoutEffect(() => knives.forEach((knife) => sanitizeScene(knife)), [knives]);
+  useLayoutEffect(() => knives.forEach((knife) => {
+    sanitizeScene(knife);
+    knife.traverse((object) => {
+      if (!object.isMesh) return;
+      (Array.isArray(object.material) ? object.material : [object.material]).forEach((material) => {
+        if (!material) return;
+        material.roughness = 0.22;
+        material.metalness = 0.85;
+        material.envMapIntensity = 1.6;
+      });
+    });
+  }), [knives]);
   useFrame(({ clock }) => {
     const g = group.current;
     if (!g) return;
@@ -266,9 +299,16 @@ function InteractiveGun() {
 
   useLayoutEffect(() => {
     const found = [];
-    sanitizeScene(model, { shadows: false });
+    sanitizeScene(model);
     model.traverse((object) => {
-      if (object.isMesh) found.push(object);
+      if (!object.isMesh) return;
+      found.push(object);
+      (Array.isArray(object.material) ? object.material : [object.material]).forEach((material) => {
+        if (!material || GLASS_PATTERN.test(material.name)) return;
+        material.roughness = Math.min(material.roughness ?? 1, 0.3);
+        material.metalness = Math.max(material.metalness ?? 0, 0.75);
+        material.envMapIntensity = 1.5;
+      });
     });
     setMeshes(found);
   }, [model]);
@@ -340,9 +380,9 @@ function Pedestal() {
   const [x, y, z] = GUN.position;
   return (
     <group position={[x, y, z]}>
-      <mesh position={[0, -1.0, 0]}>
+      <mesh position={[0, -1.0, 0]} castShadow receiveShadow>
         <cylinderGeometry args={[0.28, 0.42, 1.3, 6]} />
-        <meshStandardMaterial color="#1b2430" metalness={0.8} roughness={0.35} />
+        <meshStandardMaterial color="#1b2430" metalness={0.85} roughness={0.22} envMapIntensity={1.4} />
       </mesh>
       <mesh position={[0, -0.32, 0]}>
         <cylinderGeometry args={[1.0, 0.85, 0.07, 6]} />
@@ -414,26 +454,159 @@ function Sun({ lowQuality }) {
       <directionalLight
         ref={light}
         position={position}
-        intensity={2.7}
+        intensity={3.4}
         color="#fff4e0"
         castShadow
         shadow-mapSize={lowQuality ? [1024, 1024] : [2048, 2048]}
         shadow-camera-near={1}
         shadow-camera-far={260}
-        shadow-camera-left={-50}
-        shadow-camera-right={50}
-        shadow-camera-top={50}
-        shadow-camera-bottom={-50}
-        shadow-bias={-0.0004}
-        shadow-normalBias={0.04}
+        shadow-camera-left={-48}
+        shadow-camera-right={48}
+        shadow-camera-top={48}
+        shadow-camera-bottom={-48}
+        shadow-bias={-0.00025}
+        shadow-normalBias={0.02}
+        shadow-radius={3}
       />
     </>
   );
 }
 
+/**
+ * Sky dome for everything past the map. Low-frequency noise with a wide
+ * smoothstep, so the clouds stay soft instead of a flat white void.
+ * Colors stay under the exposure clip.
+ */
+function CloudDome() {
+  const material = useMemo(() => new THREE.ShaderMaterial({
+    side: THREE.BackSide,
+    depthWrite: false,
+    fog: false,
+    uniforms: { uTime: { value: 0 } },
+    vertexShader: `
+      varying vec3 vDir;
+      void main() {
+        vDir = position;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      uniform float uTime;
+      varying vec3 vDir;
+
+      float hash(vec3 p) {
+        p = fract(p * 0.3183099 + vec3(0.11, 0.17, 0.13));
+        p *= 17.0;
+        return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+      }
+      float noise(vec3 p) {
+        vec3 i = floor(p);
+        vec3 f = fract(p);
+        f = f * f * (3.0 - 2.0 * f);
+        return mix(
+          mix(mix(hash(i), hash(i + vec3(1.0, 0.0, 0.0)), f.x),
+              mix(hash(i + vec3(0.0, 1.0, 0.0)), hash(i + vec3(1.0, 1.0, 0.0)), f.x), f.y),
+          mix(mix(hash(i + vec3(0.0, 0.0, 1.0)), hash(i + vec3(1.0, 0.0, 1.0)), f.x),
+              mix(hash(i + vec3(0.0, 1.0, 1.0)), hash(i + vec3(1.0, 1.0, 1.0)), f.x), f.y),
+          f.z);
+      }
+      float fbm(vec3 p) {
+        float a = 0.6;
+        float s = 0.0;
+        for (int i = 0; i < 3; i++) {
+          s += a * noise(p);
+          p = p * 2.02 + vec3(1.7, 9.2, 3.1);
+          a *= 0.45;
+        }
+        return s;
+      }
+
+      void main() {
+        vec3 dir = normalize(vDir);
+        float height = dir.y * 0.5 + 0.5;
+        vec3 zenith = vec3(0.10, 0.24, 0.46);
+        vec3 mid = vec3(0.26, 0.40, 0.56);
+        vec3 haze = vec3(0.40, 0.52, 0.64);
+        vec3 sky = mix(haze, mix(mid, zenith, smoothstep(0.55, 0.95, height)), smoothstep(0.2, 0.55, height));
+        float n = fbm(dir * 2.6 + vec3(uTime, 0.15, 0.4));
+        float cloud = smoothstep(0.34, 0.68, n);
+        vec3 puff = vec3(0.78, 0.83, 0.88);
+        gl_FragColor = vec4(mix(sky, puff, cloud * 0.95), 1.0);
+      }
+    `,
+  }), []);
+
+  const dome = useRef(null);
+  useFrame((state) => {
+    material.uniforms.uTime.value = state.clock.elapsedTime * 0.012;
+    if (dome.current) dome.current.position.copy(state.camera.position);
+  });
+
+  return (
+    <mesh ref={dome} frustumCulled={false} renderOrder={-1}>
+      <sphereGeometry args={[500, 32, 24]} />
+      <primitive object={material} attach="material" />
+    </mesh>
+  );
+}
+
+/**
+ * Live reflection probe at the courtyard. Captures the site and sky into the
+ * scene environment so floors, metal and glass reflect what is actually there.
+ * Shadow maps stay on the main view; the probe does not re-render them.
+ */
+function ReflectionProbe({ lowQuality }) {
+  const { gl, scene } = useThree();
+  const size = lowQuality ? 128 : 256;
+  const probe = useMemo(() => {
+    const target = new THREE.WebGLCubeRenderTarget(size, {
+      generateMipmaps: true,
+      minFilter: THREE.LinearMipmapLinearFilter,
+    });
+    const camera = new THREE.CubeCamera(0.4, 500, target);
+    camera.position.set(SITE_CENTER[0], SITE_CENTER[1] + 2.2, SITE_CENTER[2]);
+    return { camera, target };
+  }, [size]);
+  const pmrem = useMemo(() => {
+    const generator = new THREE.PMREMGenerator(gl);
+    generator.compileCubemapShader();
+    return generator;
+  }, [gl]);
+  const frame = useRef(0);
+  const current = useRef(null);
+
+  useEffect(() => () => {
+    current.current?.dispose();
+    pmrem.dispose();
+    probe.target.dispose();
+  }, [pmrem, probe]);
+
+  useFrame(() => {
+    frame.current += 1;
+    const interval = lowQuality ? 50 : 30;
+    if (frame.current !== 2 && frame.current % interval !== 0) return;
+    const shadows = gl.shadowMap.autoUpdate;
+    gl.shadowMap.autoUpdate = false;
+    probe.camera.update(gl, scene);
+    gl.shadowMap.autoUpdate = shadows;
+    const next = pmrem.fromCubemap(probe.target.texture);
+    scene.environment = next.texture;
+    scene.environmentIntensity = 0.72;
+    current.current?.dispose();
+    current.current = next;
+  });
+
+  return null;
+}
+
 /* ---------------------------------------------------------------- Contents */
 function SceneContents({ rig, debug, lowQuality }) {
   const { camera, scene, gl } = useThree();
+  // Compile every material program before the first paint. Otherwise each mesh
+  // compiles its shader on the frame it first appears.
+  useLayoutEffect(() => {
+    gl.compile(scene, camera);
+  }, [gl, scene, camera]);
   useEffect(() => {
     window.__valorant = {
       registry,
@@ -459,10 +632,11 @@ function SceneContents({ rig, debug, lowQuality }) {
 
   return (
     <>
-      <Sky distance={900} sunPosition={SUN_OFFSET} turbidity={3.2} rayleigh={1.4} mieCoefficient={0.004} mieDirectionalG={0.85} />
-      <fog attach="fog" args={['#cfe4f6', 160, 720]} />
-      <Environment preset="park" environmentIntensity={0.45} background={false} />
-      <hemisphereLight args={['#e0f2fe', '#fef3c7', 1.2]} />
+      <CloudDome />
+      <fog attach="fog" args={['#8eabC4', 280, 860]} />
+      <Environment preset="park" environmentIntensity={0.35} background={false} />
+      <ReflectionProbe lowQuality={lowQuality} />
+      <hemisphereLight args={['#c5d7ea', '#e7d3b0', 0.38]} />
       <Sun lowQuality={lowQuality} />
 
       <MapModel />
