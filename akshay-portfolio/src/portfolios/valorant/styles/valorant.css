@@ -61,6 +61,15 @@ html.valorant-route * {
   transition: width 0.25s ease;
 }
 
+.vl-boot {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  background: #05070a;
+}
+
 /* --------------------------------------------------------------------- HUD */
 .vh-root {
   position: absolute;

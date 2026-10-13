@@ -56,8 +56,8 @@ export const SUN_OFFSET = [40, 60, 25];
  */
 export const CAST = [
   // ---- Attackers: site entry push through the west door ----
-  { id: 'neon', model: 'neon', weapon: 'vandal', pose: 'sprint', position: [55.4, 3, -98.4], rotationY: -Math.PI / 2, aimAt: [72, 3.4, -99.5], lookAt: [72, 4.2, -99.5], phase: 0 },
-  { id: 'phoenix', model: 'phoenix', weapon: 'phantom', pose: 'sprint', position: [51.8, 3, -95.6], rotationY: -Math.PI / 2 + 0.1, aimAt: [72, 3.4, -97], lookAt: [72, 4.2, -97], phase: 0.5 },
+  { id: 'neon', model: 'neon', weapon: 'vandal', pose: 'sprinter', position: [55.4, 3, -98.4], rotationY: -Math.PI / 2, aimAt: [72, 3.4, -99.5], lookAt: [72, 4.2, -99.5], phase: 0 },
+  { id: 'phoenix', model: 'phoenix', weapon: 'phantom', pose: 'ads', position: [51.8, 3, -95.6], rotationY: -Math.PI / 2 + 0.1, aimAt: [72, 3.4, -97], lookAt: [72, 4.2, -97] },
   { id: 'reyna', model: 'reyna', weapon: 'vandal', pose: 'lowReady', position: [58, 3, -102], rotationY: -Math.PI / 2 - 0.35, aimAt: [70, 3.2, -90], lookAt: [68, 4.2, -92] },
 
   // ---- Attackers: back-line utility from cover ----
@@ -78,7 +78,7 @@ export const CAST = [
 export const SECTION_ORBITS = {
   // Tiny sweep: the floating Vandal is a foreground prop and must stay in frame.
   home: { center: v(63, 5, -96), radius: 34, height: 19, angle: 0, arc: 0.05, speed: 0.12 },
-  // Operations: Neon sprinting out of the main entry.
+  // Operations: Neon sprints the entry with the sprinter aim pose; Phoenix holds.
   projects: { center: v(55.4, 4.4, -98.4), radius: 5.4, height: 0.6, angle: Math.PI / 2 - 0.25, arc: 0.25, speed: 0.2 },
   // Arsenal: Chamber's Operator from the crate perch.
   skills: { center: v(62, 8.6, -84), radius: 5.6, height: 0.5, angle: Math.PI - 0.2, arc: 0.5, speed: 0.2 },

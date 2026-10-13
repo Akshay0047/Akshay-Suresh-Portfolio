@@ -42,17 +42,16 @@ const s = {
 
 export function createRig(model) {
   const bones = {};
+  const rest = {};
   model.traverse((object) => {
-    if (object.isBone) bones[object.name] = object;
+    if (!object.isBone) return;
+    bones[object.name] = object;
+    rest[object.name] = { q: object.quaternion.clone(), p: object.position.clone() };
   });
   if (!REQUIRED.every((name) => bones[name])) return null;
 
   model.updateWorldMatrix(true, true);
   const toLocal = (bone) => model.worldToLocal(bone.getWorldPosition(new THREE.Vector3()));
-  const rest = {};
-  DRIVEN.forEach((name) => {
-    if (bones[name]) rest[name] = { q: bones[name].quaternion.clone(), p: bones[name].position.clone() };
-  });
 
   // Character basis in model-local space: facing comes from the toes (reliable),
   // left = up x forward.
@@ -323,6 +322,75 @@ export function applyPose(rig, spec) {
   });
 
   // 6. Weapon + arms.
+  poseArms(rig, spec);
+
+  // 7. Head tracking (shares the spine's counter-rotation so gaze stays level).
+  if (bones.Neck && bones.Head) {
+    const look = spec.lookAt;
+    const headWorld = bones.Head.getWorldPosition(s.a);
+    if (look) {
+      const desired = s.b.set(look[0], look[1], look[2]).sub(headWorld).normalize();
+      // Current forward of the head from rest orientation.
+      bones.Head.getWorldQuaternion(s.q1);
+      s.q2.copy(s.mq).invert().multiply(s.q1).multiply(s.q3.copy(rig.headQuat).invert()); // delta from rest, model-local
+      const current = s.c.copy(rig.forward).applyQuaternion(s.q2).applyQuaternion(s.mq).normalize();
+      s.q4.setFromUnitVectors(current, desired);
+      const angle = 2 * Math.acos(Math.min(1, Math.abs(s.q4.w)));
+      const limit = 1.05;
+      if (angle > limit) s.q4.slerp(s.q1.identity(), 1 - limit / angle);
+      s.q4.slerp(s.q1.identity(), 0.15);
+      // Split between neck and head.
+      rotateWorld(bones.Neck, s.q3.identity().slerp(s.q4, 0.45));
+      rotateWorld(bones.Head, s.q3.identity().slerp(s.q4, 0.55));
+    } else {
+      rotateAbout(bones.Neck, frame.left, -(spec.lean ?? 0) * 0.45 + (spec.headPitch ?? 0) * 0.5);
+      rotateAbout(bones.Head, frame.left, -(spec.lean ?? 0) * 0.35 + (spec.headPitch ?? 0) * 0.5);
+      rotateAbout(bones.Head, frame.up, (spec.headYaw ?? 0) - (spec.twist ?? 0) * 0.6);
+    }
+  }
+
+}
+
+// Unreal bone space is Z-up. Rotating -90° about X maps it onto the Y-up frame the GLB uses.
+const UNREAL_TO_Y_UP = new THREE.Quaternion(-Math.SQRT1_2, 0, 0, Math.SQRT1_2);
+const Y_UP_TO_UNREAL = UNREAL_TO_Y_UP.clone().invert();
+
+/**
+ * Layer an ActorX clip onto the current pose. Keys are parent-local quaternions
+ * from the Unreal bind. They are swung into Y-up, then applied on top of the GLB
+ * rest quaternion (the export's per-bone axis correction). Bones left out of
+ * `rotations` — the sprinting legs, for an upper-body clip — stay as they are.
+ */
+export function overlayClipLocal(rig, rotations) {
+  const { bones, rest } = rig;
+  for (const name in rotations) {
+    const bone = bones[name];
+    const base = rest[name];
+    if (!bone || !base) continue;
+    const q = rotations[name];
+    s.q1.set(q[0], q[1], q[2], q[3]).normalize();
+    s.q2.copy(UNREAL_TO_Y_UP).multiply(s.q1).multiply(Y_UP_TO_UNREAL);
+    s.q4.copy(base.q).multiply(s.q2);
+    // Full strength folds the head down onto the rifle. A partial blend keeps the
+    // northwest aim without burying the gun in the neck.
+    bone.quaternion.copy(base.q).slerp(s.q4, 0.62);
+  }
+  rig.model.updateWorldMatrix(true, true);
+}
+
+/** Re-seat the weapon and the arms that should hold it, without touching the body pose. */
+export function holdWeapon(rig, spec) {
+  const { model } = rig;
+  model.updateWorldMatrix(true, true);
+  model.getWorldQuaternion(s.mq);
+  frame.left.copy(rig.left).applyQuaternion(s.mq);
+  frame.forward.copy(rig.forward).applyQuaternion(s.mq);
+  model.getWorldPosition(frame.origin);
+  poseArms(rig, spec);
+}
+
+function poseArms(rig, spec) {
+  const { bones } = rig;
   let wp = null;
   const handTargets = { L: null, R: null };
   const handAim = { L: null, R: null };
@@ -351,33 +419,6 @@ export function applyPose(rig, spec) {
       rotateWorld(hand, s.q4);
     }
   });
-
-  // 7. Head tracking (shares the spine's counter-rotation so gaze stays level).
-  if (bones.Neck && bones.Head) {
-    const look = spec.lookAt;
-    const headWorld = bones.Head.getWorldPosition(s.a);
-    if (look) {
-      const desired = s.b.set(look[0], look[1], look[2]).sub(headWorld).normalize();
-      // Current forward of the head from rest orientation.
-      bones.Head.getWorldQuaternion(s.q1);
-      s.q2.copy(s.mq).invert().multiply(s.q1).multiply(s.q3.copy(rig.headQuat).invert()); // delta from rest, model-local
-      const current = s.c.copy(rig.forward).applyQuaternion(s.q2).applyQuaternion(s.mq).normalize();
-      s.q4.setFromUnitVectors(current, desired);
-      const angle = 2 * Math.acos(Math.min(1, Math.abs(s.q4.w)));
-      const limit = 1.05;
-      if (angle > limit) s.q4.slerp(s.q1.identity(), 1 - limit / angle);
-      s.q4.slerp(s.q1.identity(), 0.15);
-      // Split between neck and head.
-      rotateWorld(bones.Neck, s.q3.identity().slerp(s.q4, 0.45));
-      rotateWorld(bones.Head, s.q3.identity().slerp(s.q4, 0.55));
-    } else {
-      rotateAbout(bones.Neck, frame.left, -(spec.lean ?? 0) * 0.45 + (spec.headPitch ?? 0) * 0.5);
-      rotateAbout(bones.Head, frame.left, -(spec.lean ?? 0) * 0.35 + (spec.headPitch ?? 0) * 0.5);
-      rotateAbout(bones.Head, frame.up, (spec.headYaw ?? 0) - (spec.twist ?? 0) * 0.6);
-    }
-  }
-
-  // 8. Seat the weapon in the hand bone.
   if (wp) {
     const holder = rig.weapon.holder;
     bones.R_Hand.updateWorldMatrix(true, false);

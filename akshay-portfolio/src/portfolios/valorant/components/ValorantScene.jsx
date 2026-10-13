@@ -8,17 +8,14 @@ import CameraController from './CameraController.jsx';
 import {
   CAST, GUN, MAP_POSITION, MODEL_URLS, RADIANITE, SECTION_ORBITS, SITE_CENTER, SPIKE, SUN_OFFSET,
 } from '../sceneConfig.js';
-import { applyPose, attachWeapon, createRig, describeWeapon } from '../agentRig.js';
+import { applyPose, attachWeapon, createRig, describeWeapon, holdWeapon, overlayClipLocal } from '../agentRig.js';
 import { adsPose, castPose, crouchPose, lowReadyPose, sprintPose, ultPose } from '../agentPoses.js';
+import { getSprinterRotations, preloadSprinterClip } from '../psaClip.js';
+
+preloadSprinterClip();
 
 // Draco decoder is served locally from /public/draco (copied from three).
 useGLTF.setDecoderPath(`${import.meta.env.BASE_URL}draco/`);
-[
-  MODEL_URLS.map,
-  ...Object.values(MODEL_URLS.agents),
-  ...Object.values(MODEL_URLS.weapons),
-  ...Object.values(MODEL_URLS.props),
-].forEach((url) => useGLTF.preload(url, true));
 
 /** Debug/test registry: window.__valorant exposes agents, camera and a NaN audit. */
 const registry = { agents: {}, mapScene: null };
@@ -124,7 +121,7 @@ function MapModel() {
   }, [scene]);
   return (
     <Bvh firstHitOnly>
-      <primitive object={scene} position={MAP_POSITION} />
+      <primitive object={scene} position={MAP_POSITION} dispose={null} />
     </Bvh>
   );
 }
@@ -208,17 +205,31 @@ function Agent({ cast }) {
 
   useFrame(({ clock }) => {
     if (!rig.current) return;
-    const poser = POSES[cast.pose];
-    if (!poser) return;
     // window.__poseTime lets automated checks freeze the animation at an exact time.
     const t = (window.__poseTime ?? clock.elapsedTime) + (cast.timeOffset ?? 0);
+    if (cast.pose === 'sprinter') {
+      const clip = getSprinterRotations();
+      applyPose(rig.current, sprintPose(t, cast));
+      if (clip) {
+        // Legs stay on the sprint cycle. The PSA is an upper-body aim, blended
+        // onto the spine and head, then both hands are put back on the rifle.
+        overlayClipLocal(rig.current, clip);
+        holdWeapon(rig.current, {
+          weapon: { pos: [-0.08, 1.42, 0.26], aimAt: cast.aimAt, palm: [-0.03, -0.085] },
+          poles: { L: [0.7, -0.9, -0.3], R: [-0.9, -0.5, -0.4] },
+        });
+      }
+      return;
+    }
+    const poser = POSES[cast.pose];
+    if (!poser) return;
     applyPose(rig.current, poser(t, cast));
   });
 
   return (
     <group ref={root} name={`agent-${cast.id}`} position={cast.position} rotation={[0, cast.rotationY ?? 0, 0]}>
       <group ref={pivot}>
-        <primitive object={model} />
+        <primitive object={model} dispose={null} />
       </group>
     </group>
   );
@@ -256,7 +267,7 @@ function KnifeRing({ center, count = 7, radius = 1.15 }) {
     <group ref={group} position={center} scale={1.6}>
       {knives.map((knife, i) => (
         <group key={i}>
-          <primitive object={knife} />
+          <primitive object={knife} dispose={null} />
         </group>
       ))}
     </group>
@@ -281,7 +292,7 @@ function SageUlt({ position }) {
   useFrame(({ clock }) => {
     if (ref.current) ref.current.position.y = position[1] + Math.sin(clock.elapsedTime * 1.2) * 0.06;
   });
-  return <primitive ref={ref} object={model} position={position} rotation={[0, 0.6, 0]} scale={0.9} />;
+  return <primitive ref={ref} object={model} position={position} rotation={[0, 0.6, 0]} scale={0.9} dispose={null} />;
 }
 
 /* --------------------------------------------------------------------- Gun */
@@ -363,7 +374,7 @@ function InteractiveGun() {
       onClick={spin}
       name="vandal-interactive"
     >
-      <primitive object={model} />
+      <primitive object={model} dispose={null} />
       {hovered &&
         meshes.map((mesh) => (
           <Fragment key={mesh.uuid}>
@@ -380,11 +391,11 @@ function Pedestal() {
   const [x, y, z] = GUN.position;
   return (
     <group position={[x, y, z]}>
-      <mesh position={[0, -1.0, 0]} castShadow receiveShadow>
+      <mesh position={[0, -1.0, 0]} castShadow receiveShadow dispose={null}>
         <cylinderGeometry args={[0.28, 0.42, 1.3, 6]} />
         <meshStandardMaterial color="#1b2430" metalness={0.85} roughness={0.22} envMapIntensity={1.4} />
       </mesh>
-      <mesh position={[0, -0.32, 0]}>
+      <mesh position={[0, -0.32, 0]} dispose={null}>
         <cylinderGeometry args={[1.0, 0.85, 0.07, 6]} />
         <meshStandardMaterial color="#00ffff" emissive="#00ffff" emissiveIntensity={1.4} toneMapped={false} />
       </mesh>
@@ -406,7 +417,7 @@ function RadianiteCrystal({ color, position, scale, index }) {
   });
   return (
     <group position={position}>
-      <mesh ref={mesh} scale={[scale * 0.6, scale, scale * 0.6]} castShadow>
+      <mesh ref={mesh} scale={[scale * 0.6, scale, scale * 0.6]} castShadow dispose={null}>
         <octahedronGeometry args={[1, 0]} />
         <meshStandardMaterial color={color} emissive={color} emissiveIntensity={1.5} toneMapped={false} roughness={0.2} />
       </mesh>
@@ -422,11 +433,11 @@ function Spike() {
   });
   return (
     <group position={SPIKE.position}>
-      <mesh position={[0, 0.17, 0]} castShadow>
+      <mesh position={[0, 0.17, 0]} castShadow dispose={null}>
         <cylinderGeometry args={[0.2, 0.26, 0.34, 8]} />
         <meshStandardMaterial color="#14181f" metalness={0.6} roughness={0.4} />
       </mesh>
-      <mesh position={[0, 0.2, 0]}>
+      <mesh position={[0, 0.2, 0]} dispose={null}>
         <torusGeometry args={[0.215, 0.025, 8, 24]} />
         <meshStandardMaterial ref={glow} color="#ff4655" emissive="#ff4655" emissiveIntensity={2} toneMapped={false} />
       </mesh>
@@ -450,7 +461,7 @@ function Sun({ lowQuality }) {
   const position = SITE_CENTER.map((value, index) => value + SUN_OFFSET[index]);
   return (
     <>
-      <primitive object={target} />
+      <primitive object={target} dispose={null} />
       <directionalLight
         ref={light}
         position={position}
@@ -543,9 +554,9 @@ function CloudDome() {
   });
 
   return (
-    <mesh ref={dome} frustumCulled={false} renderOrder={-1}>
+    <mesh ref={dome} frustumCulled={false} renderOrder={-1} dispose={null}>
       <sphereGeometry args={[500, 32, 24]} />
-      <primitive object={material} attach="material" />
+      <primitive object={material} attach="material" dispose={null} />
     </mesh>
   );
 }
@@ -600,13 +611,8 @@ function ReflectionProbe({ lowQuality }) {
 }
 
 /* ---------------------------------------------------------------- Contents */
-function SceneContents({ rig, debug, lowQuality }) {
+function SceneContents({ rig, debug, lowQuality, onShadersReady }) {
   const { camera, scene, gl } = useThree();
-  // Compile every material program before the first paint. Otherwise each mesh
-  // compiles its shader on the frame it first appears.
-  useLayoutEffect(() => {
-    gl.compile(scene, camera);
-  }, [gl, scene, camera]);
   useEffect(() => {
     window.__valorant = {
       registry,
@@ -653,8 +659,57 @@ function SceneContents({ rig, debug, lowQuality }) {
       <InteractiveGun />
 
       {debug ? <DebugRig /> : <CameraController sections={SECTION_ORBITS} rig={rig} getCollider={() => registry.mapScene} />}
+      <ShaderWarmup onReady={onShadersReady} />
     </>
   );
+}
+
+/**
+ * gl.compile during the first layout runs before the environment map exists, so
+ * every mesh recompiles the lit/shadow program the moment it enters the camera.
+ * Wait until that map is assigned, then compile the whole scene off the render
+ * loop and draw one shadow pass before the section buttons are enabled.
+ */
+function ShaderWarmup({ onReady }) {
+  const { gl, scene, camera } = useThree();
+  const onReadyRef = useRef(onReady);
+  onReadyRef.current = onReady;
+  const queued = useRef(false);
+
+  const compileScene = () => {
+    if (queued.current) return;
+    queued.current = true;
+    window.setTimeout(() => {
+      scene.updateMatrixWorld(true);
+      camera.updateMatrixWorld();
+      const compile = typeof gl.compileAsync === 'function'
+        ? gl.compileAsync(scene, camera)
+        : Promise.resolve(gl.compile(scene, camera));
+      compile.then(() => {
+        try {
+          gl.shadowMap.needsUpdate = true;
+          gl.render(scene, camera);
+        } catch (error) {
+          console.error(error);
+        }
+        onReadyRef.current?.();
+      }).catch(() => {
+        onReadyRef.current?.();
+      });
+    }, 0);
+  };
+
+  useEffect(() => {
+    const id = window.setTimeout(compileScene, 8000);
+    return () => window.clearTimeout(id);
+  }, [gl, scene, camera]);
+
+  useFrame(() => {
+    if (!scene.environment) return;
+    compileScene();
+  });
+
+  return null;
 }
 
 function DebugRig() {
@@ -666,7 +721,7 @@ function DebugRig() {
   return <OrbitControls ref={controls} makeDefault target={[62, 3, -95]} maxDistance={400} />;
 }
 
-export default function ValorantScene({ rig }) {
+export default function ValorantScene({ rig, onShadersReady }) {
   const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
   const debug = params.has('debug');
   // ?quality=low renders at reduced resolution (used for automated checks on
@@ -676,18 +731,25 @@ export default function ValorantScene({ rig }) {
     <Canvas
       className="valorant-canvas"
       shadows="percentage"
-      dpr={lowQuality ? 0.6 : [1, 1.75]}
+      dpr={lowQuality ? 0.6 : [1, 1.5]}
       camera={{ fov: 50, near: 0.1, far: 1200, position: [127, 60, 0] }}
       gl={{
-        antialias: !lowQuality,
+        antialias: false,
         powerPreference: 'high-performance',
         toneMapping: THREE.ACESFilmicToneMapping,
         toneMappingExposure: 1.25,
       }}
     >
       <Suspense fallback={<Loader />}>
-        <SceneContents rig={rig} debug={debug} lowQuality={lowQuality} />
+        <SceneContents rig={rig} debug={debug} lowQuality={lowQuality} onShadersReady={onShadersReady} />
       </Suspense>
     </Canvas>
   );
 }
+
+[
+  MODEL_URLS.map,
+  ...Object.values(MODEL_URLS.agents),
+  ...Object.values(MODEL_URLS.weapons),
+  ...Object.values(MODEL_URLS.props),
+].forEach((url) => useGLTF.preload(url, true));
