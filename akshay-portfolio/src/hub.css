@@ -1,0 +1,136 @@
+.hub {
+  position: relative;
+  min-height: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4vh;
+  padding: 6vh 6vw;
+  overflow: hidden;
+  background: #000;
+  color: #f4f4f2;
+  font-family: Bahnschrift, 'Arial Narrow', 'Segoe UI', sans-serif;
+}
+
+.hub-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse at center, #000 20%, transparent 75%);
+  pointer-events: none;
+}
+
+.hub-kicker {
+  position: relative;
+  margin: 0;
+  color: rgba(244, 244, 242, 0.55);
+  font-size: 12px;
+  letter-spacing: 0.5em;
+  text-transform: uppercase;
+}
+
+.hub-choices {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2vh;
+}
+
+.hub-link {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 24px;
+  width: fit-content;
+  color: #f4f4f2;
+  text-decoration: none;
+  line-height: 0.95;
+  transition: color 0.2s ease, transform 0.25s ease;
+}
+
+.hub-index {
+  font-size: 14px;
+  letter-spacing: 0.3em;
+  color: rgba(244, 244, 242, 0.4);
+}
+
+.hub-title {
+  position: relative;
+  font-size: clamp(28px, 5.4vw, 96px);
+  white-space: nowrap;
+  font-weight: 700;
+  font-style: italic;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+
+.hub-link-sekiro:hover,
+.hub-link-sekiro:focus-visible {
+  color: #d59b58;
+  transform: translateX(18px);
+}
+
+.hub-link-valorant:hover,
+.hub-link-valorant:focus-visible {
+  color: #ff4655;
+  transform: translateX(18px);
+}
+
+.hub-link:hover .hub-index {
+  color: currentColor;
+}
+
+/* Hover glitch: RGB split plus clipped jitter on the title. */
+.hub-link:hover .hub-title {
+  animation: hub-jitter 0.28s steps(2, end) infinite;
+  text-shadow: 3px 0 #00ffff, -3px 0 #ff4655;
+}
+
+@keyframes hub-jitter {
+  0% {
+    clip-path: inset(0 0 0 0);
+    transform: translate(0, 0);
+  }
+  20% {
+    clip-path: inset(12% 0 55% 0);
+    transform: translate(-6px, 1px);
+  }
+  40% {
+    clip-path: inset(60% 0 8% 0);
+    transform: translate(6px, -1px);
+  }
+  60% {
+    clip-path: inset(30% 0 35% 0);
+    transform: translate(-3px, 0);
+  }
+  80% {
+    clip-path: inset(0 0 0 0);
+    transform: translate(4px, 1px);
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+    transform: translate(0, 0);
+  }
+}
+
+.hub-fallback {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: #000;
+  color: rgba(244, 244, 242, 0.6);
+  font-family: Bahnschrift, 'Segoe UI', sans-serif;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hub-link:hover .hub-title {
+    animation: none;
+  }
+}

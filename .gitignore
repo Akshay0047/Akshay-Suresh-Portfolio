@@ -37,3 +37,10 @@ Thumbs.db
 
 # Archives
 latest-release.zip
+
+# Blender source files (large; only the optimized Draco GLBs are shipped)
+*.blend
+*.blend1
+
+# Local tooling artefacts
+.playwright-mcp/

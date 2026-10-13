@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { CircleDot, Code2, Crosshair, Database, Sparkles } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react';
-import { useKunaiModelProgress } from '@/components/kunai-model-context';
+import { useKunaiModelProgress } from '@/portfolios/sekiro/components/kunai-model-context';
 import { preloadKunaiModel } from '@/lib/preload-assets';
 
 const assetBase = import.meta.env.BASE_URL.replace(/\/$/, '');

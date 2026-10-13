@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useKunaiModelProgress } from '@/components/kunai-model-context';
+import { useKunaiModelProgress } from '@/portfolios/sekiro/components/kunai-model-context';
 import { preloadCoreAssets } from '@/lib/preload-assets';
 
 function Particles({ count = 28 }: { count?: number }) {
