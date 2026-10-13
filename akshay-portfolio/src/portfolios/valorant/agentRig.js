@@ -32,7 +32,7 @@ const UP = new THREE.Vector3(0, 1, 0);
 // Scratch objects (module-level; the rig is solved synchronously).
 const s = {
   a: new THREE.Vector3(), b: new THREE.Vector3(), c: new THREE.Vector3(), d: new THREE.Vector3(),
-  e: new THREE.Vector3(), f: new THREE.Vector3(),
+  e: new THREE.Vector3(), f: new THREE.Vector3(), g: new THREE.Vector3(), h: new THREE.Vector3(),
   q1: new THREE.Quaternion(), q2: new THREE.Quaternion(), q3: new THREE.Quaternion(), q4: new THREE.Quaternion(),
   m: new THREE.Matrix4(), m2: new THREE.Matrix4(),
   mq: new THREE.Quaternion(),
@@ -179,8 +179,11 @@ function solveTwoBone(upper, mid, end, target, pole, l1, l2) {
   const reach = s.e.copy(A).addScaledVector(toTarget, dist);
 
   // Upper bone: current direction A->mid onto A->elbow.
-  const B = mid.getWorldPosition(s.f);
-  s.q4.setFromUnitVectors(B.sub(A).normalize(), s.f.copy(elbow).sub(A).normalize());
+  // (Distinct scratch vectors: sharing one made both arguments identical and the
+  // upper limb never rotated, which left every arm and thigh stuck in the bind pose.)
+  const currentDir = mid.getWorldPosition(s.g).sub(A).normalize();
+  const desiredDir = s.h.copy(elbow).sub(A).normalize();
+  s.q4.setFromUnitVectors(currentDir, desiredDir);
   rotateWorld(upper, s.q4);
 
   // Lower bone: current direction mid->end onto mid->reach.

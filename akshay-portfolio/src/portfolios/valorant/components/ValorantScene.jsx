@@ -135,6 +135,7 @@ function Agent({ cast }) {
   const model = useMemo(() => cloneSkinned(agentScene), [agentScene]);
   const weaponModel = useMemo(() => (cast.weapon ? cloneSkinned(weaponScene) : null), [weaponScene, cast.weapon]);
   const root = useRef();
+  const pivot = useRef();
   const rig = useRef(null);
 
   useLayoutEffect(() => {
@@ -145,10 +146,24 @@ function Agent({ cast }) {
     if (weaponModel) {
       sanitizeScene(weaponModel);
       weaponModel.traverse((object) => {
-        if (object.isMesh) object.frustumCulled = false;
+        if (!object.isMesh) return;
+        object.frustumCulled = false;
+        // The Phantom's white skin clips to a flat white silhouette under ACES at
+        // exposure 1.25; tame it on a private copy of the material.
+        if (cast.weapon === 'phantom' && object.material?.color) {
+          object.material = object.material.clone();
+          object.material.color.multiplyScalar(0.62);
+          if (object.material.emissive) object.material.emissiveIntensity = 0;
+        }
       });
     }
     const created = createRig(model);
+    // The exported rigs face +X in model space (not -Z), so a 'rotationY' that aims the
+    // cast at a target left every body turned 90 degrees away from its gun. Measure the
+    // real facing from the toes and yaw the model so it faces -Z when rotationY = 0.
+    if (created && pivot.current) {
+      pivot.current.rotation.y = Math.PI - Math.atan2(created.forward.x, created.forward.z);
+    }
     if (weaponModel && cast.weaponScale) weaponModel.scale.setScalar(cast.weaponScale);
     if (created && weaponModel) {
       attachWeapon(created, weaponModel, describeWeapon(weaponModel, WEAPON_OVERRIDES[cast.weapon]));
@@ -173,13 +188,16 @@ function Agent({ cast }) {
     if (!rig.current) return;
     const poser = POSES[cast.pose];
     if (!poser) return;
-    const t = clock.elapsedTime + (cast.timeOffset ?? 0);
+    // window.__poseTime lets automated checks freeze the animation at an exact time.
+    const t = (window.__poseTime ?? clock.elapsedTime) + (cast.timeOffset ?? 0);
     applyPose(rig.current, poser(t, cast));
   });
 
   return (
     <group ref={root} name={`agent-${cast.id}`} position={cast.position} rotation={[0, cast.rotationY ?? 0, 0]}>
-      <primitive object={model} />
+      <group ref={pivot}>
+        <primitive object={model} />
+      </group>
     </group>
   );
 }
