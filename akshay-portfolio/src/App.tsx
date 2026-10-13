@@ -17,7 +17,7 @@ import {
   Sparkles,
   X,
 } from 'lucide-react';
-import Atmosphere from '@/components/Atmosphere';
+import ValorantScene from '@/components/3d/ValorantScene.jsx';
 import { BladeButton } from '@/components/blade-button';
 import { EquipmentPanel } from '@/components/equipment';
 import { KunaiModelProvider } from '@/components/kunai-model-context';
@@ -28,13 +28,13 @@ import {
   ROD_OFFSET_LORE,
 } from '@/components/load-profile';
 import { LoadingScreen } from '@/components/loading-screen';
-import { CreditsButton, CreditsProvider } from '@/components/credits';
-import { BrightnessShell, SettingsOptionsPanel, SoundProvider, useSound } from '@/components/sound-context';
+import { CreditsButton } from '@/components/credits';
+import { SettingsOptionsPanel, useSound } from '@/components/sound-context';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
-import { Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
+import { Route, Switch, useLocation } from 'wouter';
 
 const queryClient = new QueryClient();
 
@@ -1799,37 +1799,12 @@ function MobileBlocker() {
 }
 
 function App() {
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  if (isMobile) {
-    return <MobileBlocker />;
-  }
-
   return (
     <QueryClientProvider client={queryClient}>
-      <CreditsProvider>
-        <SoundProvider>
-          <SwordCursor />
-          <TooltipProvider>
-            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-              <BrightnessShell>
-                <Atmosphere />
-                <div className="app-shell relative z-10 h-full min-h-0 bg-transparent">
-                  <Router />
-                </div>
-              </BrightnessShell>
-            </WouterRouter>
-            <Toaster />
-          </TooltipProvider>
-        </SoundProvider>
-      </CreditsProvider>
+      <TooltipProvider>
+        <ValorantScene />
+        <Toaster />
+      </TooltipProvider>
     </QueryClientProvider>
   );
 }
