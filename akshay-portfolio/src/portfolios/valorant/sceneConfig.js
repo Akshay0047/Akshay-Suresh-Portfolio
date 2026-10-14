@@ -56,14 +56,15 @@ export const SUN_OFFSET = [40, 60, 25];
  */
 export const CAST = [
   // ---- Attackers: site entry push through the west door ----
-  { id: 'neon', model: 'neon', weapon: 'vandal', pose: 'sprinter', position: [55.4, 3, -98.4], rotationY: -Math.PI / 2, aimAt: [72, 3.4, -99.5], lookAt: [72, 4.2, -99.5], phase: 0 },
+  { id: 'neon', model: 'neon', weapon: 'vandal', pose: 'sprinter', position: [55.4, 3, -98.4], rotationY: -Math.PI / 2, aimAt: [72, 3.4, -99.5], lookAt: [72, 4.2, -99.5] },
   { id: 'phoenix', model: 'phoenix', weapon: 'phantom', pose: 'ads', position: [51.8, 3, -95.6], rotationY: -Math.PI / 2 + 0.1, aimAt: [72, 3.4, -97], lookAt: [72, 4.2, -97] },
   { id: 'reyna', model: 'reyna', weapon: 'vandal', pose: 'lowReady', position: [58, 3, -102], rotationY: -Math.PI / 2 - 0.35, aimAt: [70, 3.2, -90], lookAt: [68, 4.2, -92] },
 
   // ---- Attackers: back-line utility from cover ----
   { id: 'gekko', model: 'gekko', weapon: 'phantom', pose: 'crouch', position: [53.1, 3, -83.4], rotationY: -1.0, aimAt: [70, 3.6, -88], lookAt: [70, 4, -90] },
   { id: 'sova', model: 'sova', weapon: 'vandal', pose: 'ads', position: [56.4, 3, -82.2], rotationY: -0.9, aimAt: [60, 3.8, -98], lookAt: [60, 4.5, -98] },
-  { id: 'sage', model: 'sage', weapon: null, pose: 'cast', position: [54.4, 3, -80.4], rotationY: -0.5, lookAt: [60, 4.5, -90] },
+  // Behind the tunnel crate (x 53..55, north face z = -84). The ult stands in front of her, still covered by the crate.
+  { id: 'sage', model: 'sage', weapon: null, pose: 'cast', position: [54.5, 3, -81.5], rotationY: Math.PI, lookAt: [58, 4.2, -92] },
 
   // ---- Heaven / skills: the long-range anchor on the crate perch ----
   { id: 'chamber', model: 'chamber', weapon: 'operator', pose: 'ads', position: [62, 7, -84], rotationY: 0.62, aimAt: [49.5, 4.2, -100], lookAt: [49.5, 4.2, -100], kneel: 0.0 },

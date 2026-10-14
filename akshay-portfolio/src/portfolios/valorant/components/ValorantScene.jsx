@@ -1,6 +1,6 @@
 import { Fragment, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, createPortal, useFrame, useThree } from '@react-three/fiber';
-import { Bvh, Environment, Html, OrbitControls, Outlines, useGLTF, useProgress } from '@react-three/drei';
+import { Bvh, Html, OrbitControls, Outlines, useGLTF, useProgress } from '@react-three/drei';
 import { Bloom, EffectComposer } from '@react-three/postprocessing';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import gsap from 'gsap';
@@ -289,7 +289,7 @@ function KnifeRing({ center, count = 7, radius = 1.15 }) {
   );
 }
 
-/** Sage's resurrection projection, standing beside her. */
+/** Sage's resurrection projection, in front of her and behind the tunnel crate. */
 function SageUlt({ position }) {
   const { scene } = useGLTF(MODEL_URLS.props.sageUlt, true);
   const model = useMemo(() => cloneSkinned(scene), [scene]);
@@ -307,7 +307,7 @@ function SageUlt({ position }) {
   useFrame(({ clock }) => {
     if (ref.current) ref.current.position.y = position[1] + Math.sin(clock.elapsedTime * 1.2) * 0.06;
   });
-  return <primitive ref={ref} object={model} position={position} rotation={[0, 0.6, 0]} scale={0.9} dispose={null} />;
+  return <primitive ref={ref} object={model} position={position} rotation={[0, Math.PI, 0]} scale={0.9} dispose={null} />;
 }
 
 /* --------------------------------------------------------------------- Gun */
@@ -624,6 +624,9 @@ function ReflectionProbe({ lowQuality }) {
     scene.environmentIntensity = QUALITY_ENV[quality] ?? QUALITY_ENV.high;
     current.current?.dispose();
     current.current = next;
+    // Shader variants key off this PMREM's dimensions. Warmup must not run
+    // against any earlier environment, or each mesh recompiles on first view.
+    scene.userData.reflectionReady = true;
   });
 
   return null;
@@ -632,8 +635,6 @@ function ReflectionProbe({ lowQuality }) {
 /* ---------------------------------------------------------------- Contents */
 function SceneContents({ rig, debug, lowQuality, onShadersReady }) {
   const { camera, scene, gl } = useThree();
-  const graphicsQuality = useSettingsStore((state) => state.graphicsQuality);
-  const environmentIntensity = QUALITY_ENV[graphicsQuality] ?? QUALITY_ENV.high;
   useEffect(() => {
     window.__valorant = {
       registry,
@@ -661,7 +662,6 @@ function SceneContents({ rig, debug, lowQuality, onShadersReady }) {
     <>
       <CloudDome />
       <fog attach="fog" args={['#8eabC4', 280, 860]} />
-      <Environment preset="park" environmentIntensity={environmentIntensity} background={false} />
       <ReflectionProbe lowQuality={lowQuality} />
       <hemisphereLight args={['#c5d7ea', '#e7d3b0', 0.38]} />
       <Sun lowQuality={lowQuality} />
@@ -670,7 +670,7 @@ function SceneContents({ rig, debug, lowQuality, onShadersReady }) {
       {CAST.map((cast) => (
         <Agent key={cast.id} cast={cast} />
       ))}
-      <SageUlt position={[55.9, 3, -79.2]} />
+      <SageUlt position={[54.5, 3, -83.1]} />
       <KnifeRing center={[63.5, 8.3, -94.5]} />
       {RADIANITE.map((crystal, index) => (
         <RadianiteCrystal key={index} index={index} {...crystal} />
@@ -692,10 +692,11 @@ function SceneContents({ rig, debug, lowQuality, onShadersReady }) {
 }
 
 /**
- * gl.compile during the first layout runs before the environment map exists, so
- * every mesh recompiles the lit/shadow program the moment it enters the camera.
- * Wait until that map is assigned, then compile the whole scene off the render
- * loop and draw one shadow pass before the section buttons are enabled.
+ * Programs are cached by environment-map size, and the driver finishes them on
+ * the first draw. Compiling from the intro camera leaves every mesh outside
+ * that frustum to compile when the tour reaches it. Wait for the reflection
+ * probe, compile every material, then draw the whole scene once — on screen
+ * and into a render target — before the section buttons are enabled.
  */
 function ShaderWarmup({ onReady }) {
   const { gl, scene, camera } = useThree();
@@ -713,26 +714,68 @@ function ShaderWarmup({ onReady }) {
         ? gl.compileAsync(scene, camera)
         : Promise.resolve(gl.compile(scene, camera));
       compile.then(() => {
+        const culled = [];
+        const shadowCameras = [];
+        const scratch = new THREE.WebGLRenderTarget(4, 4);
         try {
+          scene.traverse((object) => {
+            if (object.isMesh && object.frustumCulled) {
+              culled.push(object);
+              object.frustumCulled = false;
+            }
+            if (object.isDirectionalLight && object.castShadow && object.shadow?.camera) {
+              const shadowCamera = object.shadow.camera;
+              shadowCameras.push({
+                camera: shadowCamera,
+                left: shadowCamera.left,
+                right: shadowCamera.right,
+                top: shadowCamera.top,
+                bottom: shadowCamera.bottom,
+              });
+              shadowCamera.left = -240;
+              shadowCamera.right = 240;
+              shadowCamera.top = 240;
+              shadowCamera.bottom = -240;
+              shadowCamera.updateProjectionMatrix();
+            }
+          });
+          scene.updateMatrixWorld(true);
           gl.shadowMap.needsUpdate = true;
           gl.render(scene, camera);
+          gl.setRenderTarget(scratch);
+          gl.render(scene, camera);
+          gl.setRenderTarget(null);
         } catch (error) {
           console.error(error);
+          gl.setRenderTarget(null);
         }
+        scratch.dispose();
+        culled.forEach((object) => {
+          object.frustumCulled = true;
+        });
+        shadowCameras.forEach(({ camera: shadowCamera, left, right, top, bottom }) => {
+          shadowCamera.left = left;
+          shadowCamera.right = right;
+          shadowCamera.top = top;
+          shadowCamera.bottom = bottom;
+          shadowCamera.updateProjectionMatrix();
+        });
+        gl.shadowMap.needsUpdate = true;
         onReadyRef.current?.();
-      }).catch(() => {
+      }).catch((error) => {
+        console.error(error);
         onReadyRef.current?.();
       });
     }, 0);
   };
 
   useEffect(() => {
-    const id = window.setTimeout(compileScene, 8000);
+    const id = window.setTimeout(compileScene, 12000);
     return () => window.clearTimeout(id);
   }, [gl, scene, camera]);
 
   useFrame(() => {
-    if (!scene.environment) return;
+    if (!scene.userData.reflectionReady) return;
     compileScene();
   });
 
