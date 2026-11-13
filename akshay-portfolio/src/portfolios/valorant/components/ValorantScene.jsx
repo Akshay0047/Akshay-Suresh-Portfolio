@@ -3,6 +3,7 @@ import { Canvas, createPortal, useFrame, useThree } from '@react-three/fiber';
 import { Bvh, Html, OrbitControls, Outlines, useGLTF, useProgress } from '@react-three/drei';
 import { Bloom, EffectComposer } from '@react-three/postprocessing';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
 import gsap from 'gsap';
 import * as THREE from 'three';
 import CameraController from './CameraController.jsx';
@@ -11,7 +12,7 @@ import {
   CAST, GUN, MAP_POSITION, MODEL_URLS, RADIANITE, SECTION_ORBITS, SITE_CENTER, SPIKE, SUN_OFFSET,
 } from '../sceneConfig.js';
 import { applyPose, attachWeapon, createRig, describeWeapon, overlayClipLocal } from '../agentRig.js';
-import { adsPose, castPose, crouchPose, lowReadyPose, ultPose } from '../agentPoses.js';
+import { adsPose, castPose, crouchPose, lowReadyPose, readyPose, ultPose } from '../agentPoses.js';
 import { getSprinterRotations, preloadSprinterClip } from '../psaClip.js';
 import { QUALITY_ENV, QUALITY_SHADOW_MAP, useSettingsStore } from '../store/useSettingsStore.js';
 
@@ -20,12 +21,52 @@ preloadSprinterClip();
 // Draco decoder is served locally from /public/draco (copied from three).
 useGLTF.setDecoderPath(`${import.meta.env.BASE_URL}draco/`);
 
+// Textures ship as KTX2 (Basis). They stay GPU-compressed (BC7/ASTC/ETC2), about a quarter of the
+// memory of RGBA8, and need no CPU image decode. The transcoder is served from /public/basis.
+// It gets its own LoadingManager: hundreds of textures finish in the same tick, and routing each one
+// through the default manager floods drei's useProgress store ("Maximum update depth exceeded").
+const ktx2Loader = new KTX2Loader(new THREE.LoadingManager()).setTranscoderPath(`${import.meta.env.BASE_URL}basis/`);
+{
+  const probe = new THREE.WebGLRenderer();
+  ktx2Loader.detectSupport(probe);
+  probe.dispose();
+  probe.forceContextLoss();
+}
+
+// Dozens of assets can finish in one tick, and drei turns every itemEnd into a synchronous React
+// update. Coalesce them so useProgress updates at most every 60 ms.
+{
+  const manager = THREE.DefaultLoadingManager;
+  const forward = manager.onProgress;
+  const finish = manager.onLoad;
+  let pending = null;
+  let timer = 0;
+  const flush = () => {
+    window.clearTimeout(timer);
+    const latest = pending;
+    pending = null;
+    if (latest) forward?.(...latest);
+  };
+  manager.onProgress = (...args) => {
+    const idle = pending === null;
+    pending = args;
+    if (idle) timer = window.setTimeout(flush, 60);
+  };
+  // drei's progress handler marks the store active again, so it must land before onLoad does.
+  manager.onLoad = (...args) => {
+    flush();
+    finish?.(...args);
+  };
+}
+const extendLoader = (loader) => loader.setKTX2Loader(ktx2Loader);
+
 /** Debug/test registry: window.__valorant exposes agents, camera and a NaN audit. */
-const registry = { agents: {}, mapScene: null };
+const registry = { agents: {}, mapScene: null, bodies: [] };
 
 const POSES = {
   ads: adsPose,
   lowReady: lowReadyPose,
+  ready: readyPose,
   crouch: crouchPose,
   ult: ultPose,
   cast: castPose,
@@ -105,6 +146,31 @@ function sanitizeMaterial(material) {
   material.needsUpdate = true;
 }
 
+/**
+ * KTX2 textures keep their transcoded blocks in JS memory after the GPU upload. Once a texture has
+ * been uploaded the GPU holds the only copy that is ever sampled, so drop the CPU one. Anything
+ * that has not uploaded yet is left alone.
+ */
+function releaseUploadedTextureData(renderer, root) {
+  const seen = new Set();
+  root.traverse((object) => {
+    if (!object.material) return;
+    (Array.isArray(object.material) ? object.material : [object.material]).forEach((material) => {
+      if (!material) return;
+      Object.keys(material).forEach((key) => {
+        const texture = material[key];
+        if (!texture || !texture.isCompressedTexture || seen.has(texture)) return;
+        seen.add(texture);
+        const props = renderer.properties.get(texture);
+        if (props.__version !== texture.version || !props.__webglTexture) return;
+        texture.mipmaps.forEach((mip) => {
+          mip.data = null;
+        });
+      });
+    });
+  });
+}
+
 /** Keep map trims from bleeding at UV edges: repeat across seams and sharpen with anisotropy. */
 function tuneMapTextures(root) {
   root.traverse((child) => {
@@ -137,7 +203,7 @@ function sanitizeScene(root, { shadows = true } = {}) {
 
 /* --------------------------------------------------------------------- Map */
 function MapModel() {
-  const { scene } = useGLTF(MODEL_URLS.map, true);
+  const { scene } = useGLTF(MODEL_URLS.map, true, false, extendLoader);
   useLayoutEffect(() => {
     sanitizeScene(scene);
     tuneMapTextures(scene);
@@ -166,9 +232,9 @@ function groundHeight(mapScene, x, y, z, reach = 4) {
 }
 
 function Agent({ cast }) {
-  const { scene: agentScene } = useGLTF(MODEL_URLS.agents[cast.model], true);
-  const { scene: weaponScene } = useGLTF(MODEL_URLS.weapons[cast.weapon ?? 'vandal'], true);
-  const { scene: mapScene } = useGLTF(MODEL_URLS.map, true);
+  const { scene: agentScene } = useGLTF(MODEL_URLS.agents[cast.model], true, false, extendLoader);
+  const { scene: weaponScene } = useGLTF(MODEL_URLS.weapons[cast.weapon ?? 'vandal'], true, false, extendLoader);
+  const { scene: mapScene } = useGLTF(MODEL_URLS.map, true, false, extendLoader);
   const model = useMemo(() => cloneSkinned(agentScene), [agentScene]);
   const weaponModel = useMemo(() => (cast.weapon ? cloneSkinned(weaponScene) : null), [weaponScene, cast.weapon]);
   const root = useRef();
@@ -252,7 +318,7 @@ function Agent({ cast }) {
 
 /** Jett's Blade Storm: a ring of knives orbiting her hover point. */
 function KnifeRing({ center, count = 7, radius = 1.15 }) {
-  const { scene } = useGLTF(MODEL_URLS.weapons.knife, true);
+  const { scene } = useGLTF(MODEL_URLS.weapons.knife, true, false, extendLoader);
   const knives = useMemo(() => Array.from({ length: count }, () => cloneSkinned(scene)), [scene, count]);
   const group = useRef();
   useLayoutEffect(() => knives.forEach((knife) => {
@@ -291,10 +357,12 @@ function KnifeRing({ center, count = 7, radius = 1.15 }) {
 
 /** Sage's resurrection projection, in front of her and behind the tunnel crate. */
 function SageUlt({ position }) {
-  const { scene } = useGLTF(MODEL_URLS.props.sageUlt, true);
+  const { scene } = useGLTF(MODEL_URLS.props.sageUlt, true, false, extendLoader);
   const model = useMemo(() => cloneSkinned(scene), [scene]);
   const ref = useRef();
   useLayoutEffect(() => {
+    const body = ref.current;
+    if (body) registry.bodies.push(body);
     sanitizeScene(model, { shadows: false });
     model.traverse((object) => {
       if (!object.isMesh) return;
@@ -303,6 +371,11 @@ function SageUlt({ position }) {
       object.material.emissive = new THREE.Color('#7ee8ff');
       object.material.emissiveIntensity = 0.5;
     });
+    return () => {
+      if (!body) return;
+      const index = registry.bodies.indexOf(body);
+      if (index >= 0) registry.bodies.splice(index, 1);
+    };
   }, [model]);
   useFrame(({ clock }) => {
     if (ref.current) ref.current.position.y = position[1] + Math.sin(clock.elapsedTime * 1.2) * 0.06;
@@ -312,7 +385,7 @@ function SageUlt({ position }) {
 
 /* --------------------------------------------------------------------- Gun */
 function InteractiveGun() {
-  const { scene } = useGLTF(MODEL_URLS.gun, true);
+  const { scene } = useGLTF(MODEL_URLS.gun, true, false, extendLoader);
   const model = useMemo(() => scene.clone(true), [scene]);
   const group = useRef();
   const [hovered, setHovered] = useState(false);
@@ -612,8 +685,9 @@ function ReflectionProbe({ lowQuality }) {
 
   useFrame(() => {
     frame.current += 1;
-    const interval = lowQuality ? 50 : 30;
-    if (frame.current !== 2 && frame.current % interval !== 0) return;
+    // The site is static, so two captures are enough: one as soon as the map is drawable (warmup
+    // waits on it) and one after the agents have settled into their poses.
+    if (frame.current !== 2 && frame.current !== 150) return;
     const shadows = gl.shadowMap.autoUpdate;
     gl.shadowMap.autoUpdate = false;
     probe.camera.update(gl, scene);
@@ -633,7 +707,7 @@ function ReflectionProbe({ lowQuality }) {
 }
 
 /* ---------------------------------------------------------------- Contents */
-function SceneContents({ rig, debug, lowQuality, onShadersReady }) {
+function SceneContents({ rig, debug, lowQuality, onShadersReady, onBootStage }) {
   const { camera, scene, gl } = useThree();
   useEffect(() => {
     window.__valorant = {
@@ -680,13 +754,18 @@ function SceneContents({ rig, debug, lowQuality, onShadersReady }) {
       <InteractiveGun />
 
       {debug ? <DebugRig /> : rig.roaming ? (
-        <WalkController onExit={() => rig.setRoaming(false)} />
+        <WalkController
+          onExit={() => rig.setRoaming(false)}
+          getMap={() => registry.mapScene}
+          getAgents={() => registry.agents}
+          getBodies={() => registry.bodies}
+        />
       ) : (
         <CameraController sections={SECTION_ORBITS} rig={rig} getCollider={() => registry.mapScene} />
       )}
       <GraphicsBinding />
       <SceneBloom />
-      <ShaderWarmup onReady={onShadersReady} />
+      <ShaderWarmup onReady={onShadersReady} onStage={onBootStage} />
     </>
   );
 }
@@ -698,22 +777,38 @@ function SceneContents({ rig, debug, lowQuality, onShadersReady }) {
  * probe, compile every material, then draw the whole scene once — on screen
  * and into a render target — before the section buttons are enabled.
  */
-function ShaderWarmup({ onReady }) {
+const nextPaint = () => new Promise((resolve) => {
+  // rAF is paused in background tabs, so never wait on it for more than a moment.
+  const fallback = window.setTimeout(resolve, 250);
+  requestAnimationFrame(() => window.setTimeout(() => {
+    window.clearTimeout(fallback);
+    resolve();
+  }, 0));
+});
+
+function ShaderWarmup({ onReady, onStage }) {
   const { gl, scene, camera } = useThree();
   const onReadyRef = useRef(onReady);
   onReadyRef.current = onReady;
+  const stageRef = useRef(onStage);
+  stageRef.current = onStage;
   const queued = useRef(false);
 
   const compileScene = () => {
     if (queued.current) return;
     queued.current = true;
-    window.setTimeout(() => {
+    stageRef.current?.('compiling');
+    // Let React paint the new stage before the compile blocks the main thread.
+    nextPaint().then(() => {
       scene.updateMatrixWorld(true);
       camera.updateMatrixWorld();
       const compile = typeof gl.compileAsync === 'function'
         ? gl.compileAsync(scene, camera)
         : Promise.resolve(gl.compile(scene, camera));
       compile.then(() => {
+        stageRef.current?.('warming');
+        return nextPaint();
+      }).then(() => {
         const culled = [];
         const shadowCameras = [];
         const scratch = new THREE.WebGLRenderTarget(4, 4);
@@ -745,6 +840,7 @@ function ShaderWarmup({ onReady }) {
           gl.setRenderTarget(scratch);
           gl.render(scene, camera);
           gl.setRenderTarget(null);
+          releaseUploadedTextureData(gl, scene);
         } catch (error) {
           console.error(error);
           gl.setRenderTarget(null);
@@ -766,10 +862,11 @@ function ShaderWarmup({ onReady }) {
         console.error(error);
         onReadyRef.current?.();
       });
-    }, 0);
+    });
   };
 
   useEffect(() => {
+    stageRef.current?.('mounted');
     const id = window.setTimeout(compileScene, 12000);
     return () => window.clearTimeout(id);
   }, [gl, scene, camera]);
@@ -831,7 +928,7 @@ function SceneBloom() {
   );
 }
 
-export default function ValorantScene({ rig, onShadersReady }) {
+export default function ValorantScene({ rig, onShadersReady, onBootStage }) {
   const resolutionScale = useSettingsStore((state) => state.resolutionScale);
   const shadowsEnabled = useSettingsStore((state) => state.shadowsEnabled);
   const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
@@ -853,7 +950,7 @@ export default function ValorantScene({ rig, onShadersReady }) {
       }}
     >
       <Suspense fallback={<Loader />}>
-        <SceneContents rig={rig} debug={debug} lowQuality={lowQuality} onShadersReady={onShadersReady} />
+        <SceneContents rig={rig} debug={debug} lowQuality={lowQuality} onShadersReady={onShadersReady} onBootStage={onBootStage} />
       </Suspense>
     </Canvas>
   );
@@ -864,4 +961,4 @@ export default function ValorantScene({ rig, onShadersReady }) {
   ...Object.values(MODEL_URLS.agents),
   ...Object.values(MODEL_URLS.weapons),
   ...Object.values(MODEL_URLS.props),
-].forEach((url) => useGLTF.preload(url, true));
+].forEach((url) => useGLTF.preload(url, true, false, extendLoader));

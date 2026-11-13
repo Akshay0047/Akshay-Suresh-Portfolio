@@ -75,6 +75,27 @@ export function adsPose(t, { aimAt, lookAt, breathe = 0.006, stance = 0, kneel =
   };
 }
 
+/**
+ * Upright stance with the rifle held in a relaxed two-handed ready position at chest height:
+ * feet shoulder-width, weight even, barrel pointing downrange and slightly low.
+ */
+export function readyPose(t, { aimAt, lookAt } = {}) {
+  const b = Math.sin(t * 1.2);
+  return {
+    hips: [0, -0.03, 0.02],
+    lean: 0.03,
+    twist: 0.06,
+    feet: {
+      L: { p: [0.17, 0, 0.08], pitch: 0 },
+      R: { p: [-0.17, 0, -0.1], pitch: 0 },
+    },
+    kneePoles: { L: [0.15, 0, 1], R: [-0.15, 0, 1] },
+    weapon: { pos: [-0.12, 1.28 + b * 0.005, 0.3], aimAt, palm: [-0.03, -0.085] },
+    poles: { L: [0.8, -0.8, -0.3], R: [-0.9, -0.6, -0.4] },
+    lookAt: lookAt ?? aimAt,
+  };
+}
+
 /** Low-ready: rifle lowered across the body, eyes up, weight forward and ready to peek. */
 export function lowReadyPose(t, { aimAt, lookAt } = {}) {
   const b = Math.sin(t * 1.1);

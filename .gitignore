@@ -44,3 +44,7 @@ latest-release.zip
 
 # Local tooling artefacts
 .playwright-mcp/
+
+# Valorant asset sources
+akshay-portfolio/assets-src/blend/
+akshay-portfolio/assets-src/.tmp/
