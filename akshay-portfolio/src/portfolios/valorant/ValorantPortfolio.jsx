@@ -96,7 +96,7 @@ function Experience() {
     <div className={`valorant-root${roaming ? ' is-roaming' : ''}`} data-ready={ready} data-roaming={roaming ? 'true' : 'false'}>
       <ValorantScene rig={rig} onShadersReady={onShadersReady} onBootStage={onBootStage} />
       <ValorantHUD ready={ready} />
-      <ValorantCursor />
+      <ValorantCursor active={ready} />
       {!ready && <BootOverlay progress={progress} assetsReady={assetsReady} />}
     </div>
   );

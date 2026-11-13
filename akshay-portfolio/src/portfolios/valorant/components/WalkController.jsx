@@ -202,11 +202,13 @@ export default function WalkController({ onExit, getMap, getAgents, getBodies })
         const rz = camera.position.z - z;
         const c = rx * rx + rz * rz - SEPARATION * SEPARATION;
         const toward = rx * direction.x + rz * direction.z;
+        // Moving away or sideways is always allowed, even when touching the body. Blocking every
+        // direction there pinned the player; the separation pass keeps the distance afterwards.
+        if (toward >= -1e-4) return;
         if (c <= 0) {
           allowed = 0;
           return;
         }
-        if (toward >= 0) return;
         const disc = toward * toward - c;
         if (disc < 0) return;
         const t = -toward - Math.sqrt(disc);

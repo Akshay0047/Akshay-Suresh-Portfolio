@@ -8,13 +8,15 @@ const FIRE_GAP = 18;
  * route (see `.valorant-route` in valorant.css); this component is mounted
  * only there. Gap opens on mousedown and closes on mouseup, like recoil.
  */
-export default function ValorantCursor() {
+export default function ValorantCursor({ active = true }) {
   const rootRef = useRef(null);
 
+  // The normal system cursor stays visible on the loading screen; the crosshair takes over once ready.
   useEffect(() => {
+    if (!active) return undefined;
     document.documentElement.classList.add('valorant-route');
     return () => document.documentElement.classList.remove('valorant-route');
-  }, []);
+  }, [active]);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -68,7 +70,9 @@ export default function ValorantCursor() {
       window.removeEventListener('mouseover', onOver);
       document.removeEventListener('mouseleave', onLeave);
     };
-  }, []);
+  }, [active]);
+
+  if (!active) return null;
 
   return (
     <div ref={rootRef} className="vc-crosshair" data-visible="false" data-hover="false" data-testid="valorant-crosshair" aria-hidden="true">
