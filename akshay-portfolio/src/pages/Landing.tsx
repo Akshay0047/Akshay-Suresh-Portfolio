@@ -244,63 +244,56 @@ export default function Landing() {
 
       <main className="relative z-10">
         <section id="top" className="flex min-h-[calc(100%-4.25rem)] flex-col justify-end px-6 pb-16 md:px-10">
-          <div className="mx-auto grid w-full max-w-6xl items-end gap-12 lg:grid-cols-[minmax(0,1.35fr)_minmax(17rem,0.8fr)] lg:gap-16">
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.42em] text-[#cbbba4]">{profile.location}</p>
-              <SplitText
-                text={profile.name}
-                tag="h1"
-                trigger="load"
-                effect="rise"
-                splitType="chars"
-                delay={28}
-                duration={0.9}
-                textAlign="left"
-                hoverEffect="none"
-                className="landing-name mt-6 text-[#f4f1ea]"
-              />
-              <div className="role-line mt-6 max-w-xl text-xl leading-snug md:text-2xl">
-                <GradientText
-                  colors={['#f7f3ec', '#e0d0ba', '#9a9086']}
-                  animationSpeed={16}
-                  yoyo
-                  variant="linear"
-                >
-                  {profile.role}
-                </GradientText>
-              </div>
-              <p className="mt-6 max-w-xl text-base leading-relaxed text-[#f4f1ea]/70 md:text-lg">{about.lead}</p>
-              <div className="mt-8 flex flex-wrap gap-3">
-                <a
-                  className="inline-flex h-11 items-center rounded-full bg-[#f4f1ea] px-5 text-sm font-medium text-[#111111] transition-colors hover:bg-white"
-                  href={`mailto:${profile.email}`}
-                >
-                  Email
-                </a>
-                <a
-                  className="inline-flex h-11 items-center rounded-full border border-white/15 px-5 text-sm text-[#f4f1ea] transition-colors hover:border-white/40"
-                  href={assetUrl(profile.resume)}
-                >
-                  Resume
-                </a>
-              </div>
+          <div className="mx-auto w-full max-w-6xl">
+            <p className="text-[11px] uppercase tracking-[0.42em] text-[#cbbba4]">{profile.location}</p>
+            <SplitText
+              text={profile.name}
+              tag="h1"
+              trigger="load"
+              effect="rise"
+              splitType="chars"
+              delay={28}
+              duration={0.9}
+              textAlign="left"
+              hoverEffect="none"
+              className="landing-name mt-6 text-[#f4f1ea]"
+            />
+            <div className="role-line mt-6 max-w-xl text-xl leading-snug md:text-2xl">
+              <GradientText
+                colors={['#f7f3ec', '#e0d0ba', '#9a9086']}
+                animationSpeed={16}
+                yoyo
+                variant="linear"
+              >
+                {profile.role}
+              </GradientText>
             </div>
-            <aside className="lg:border-l lg:border-white/10 lg:pb-1 lg:pl-10">
-              <p className="hidden text-sm leading-relaxed text-[#f4f1ea]/75 lg:block">
-                Third-year Computer Science student at VIT Vellore, open to internship and full-time roles.
-              </p>
-              <dl className="mt-0 grid grid-cols-3 gap-3 border-t border-white/10 pt-6 sm:gap-6 lg:mt-8 lg:border-t-0 lg:pt-0">
-                {STATS.map((stat) => (
-                  <div key={stat.label} className="min-w-0">
-                    <dt className="text-[11px] uppercase tracking-[0.06em] text-[#f4f1ea]/45 sm:tracking-[0.18em]">{stat.label}</dt>
-                    <dd className="mt-2 text-xl tracking-tight text-[#f4f1ea] sm:text-2xl md:text-3xl">
-                      <CountUp to={stat.to} decimals={stat.decimals} suffix={'suffix' in stat ? stat.suffix : ''} duration={1.6} />
-                    </dd>
-                    <dd className="mt-1 text-xs text-[#f4f1ea]/45">{stat.detail}</dd>
-                  </div>
-                ))}
-              </dl>
-            </aside>
+            <p className="mt-6 max-w-xl text-base leading-relaxed text-[#f4f1ea]/70 md:text-lg">{about.lead}</p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <a
+                className="inline-flex h-11 items-center rounded-full bg-[#f4f1ea] px-5 text-sm font-medium text-[#111111] transition-colors hover:bg-white"
+                href={`mailto:${profile.email}`}
+              >
+                Email
+              </a>
+              <a
+                className="inline-flex h-11 items-center rounded-full border border-white/15 px-5 text-sm text-[#f4f1ea] transition-colors hover:border-white/40"
+                href={assetUrl(profile.resume)}
+              >
+                Resume
+              </a>
+            </div>
+            <dl className="mt-12 grid max-w-xl grid-cols-3 gap-3 border-t border-white/10 pt-6 sm:gap-6">
+              {STATS.map((stat) => (
+                <div key={stat.label} className="min-w-0">
+                  <dt className="text-[11px] uppercase tracking-[0.06em] text-[#f4f1ea]/45 sm:tracking-[0.18em]">{stat.label}</dt>
+                  <dd className="mt-2 text-xl tracking-tight text-[#f4f1ea] sm:text-2xl md:text-3xl">
+                    <CountUp to={stat.to} decimals={stat.decimals} suffix={'suffix' in stat ? stat.suffix : ''} duration={1.6} />
+                  </dd>
+                  <dd className="mt-1 text-xs text-[#f4f1ea]/45">{stat.detail}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
         </section>
 
