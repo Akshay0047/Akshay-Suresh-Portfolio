@@ -244,7 +244,7 @@ export default function Landing() {
 
       <main className="relative z-10">
         <section id="top" className="flex min-h-[calc(100%-4.25rem)] flex-col justify-end px-6 pb-16 md:px-10">
-          <div className="mx-auto w-full max-w-6xl">
+          <div className="mx-auto w-full max-w-6xl xl:ml-[calc((100%-72rem)/2+5rem)]">
             <p className="text-[11px] uppercase tracking-[0.42em] text-[#cbbba4]">{profile.location}</p>
             <SplitText
               text={profile.name}
@@ -279,6 +279,8 @@ export default function Landing() {
               <a
                 className="inline-flex h-11 items-center rounded-full border border-white/15 px-5 text-sm text-[#f4f1ea] transition-colors hover:border-white/40"
                 href={assetUrl(profile.resume)}
+                target="_blank"
+                rel="noreferrer"
               >
                 Resume
               </a>
@@ -294,6 +296,10 @@ export default function Landing() {
                 </div>
               ))}
             </dl>
+            <p className="landing-scroll-cue">
+              <i aria-hidden="true" />
+              Scroll for more
+            </p>
           </div>
         </section>
 

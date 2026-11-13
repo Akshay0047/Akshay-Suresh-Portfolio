@@ -63,6 +63,44 @@
   }
 }
 
+.landing-scroll-cue {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-top: 3.25rem;
+  color: rgb(244 241 234 / 0.45);
+  font-size: 11px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+}
+
+.landing-scroll-cue i {
+  display: block;
+  width: 1px;
+  height: 2.25rem;
+  background: linear-gradient(to bottom, transparent, rgb(244 241 234 / 0.75));
+  transform-origin: top;
+  animation: landing-scroll 1.8s ease-in-out infinite;
+}
+
+@keyframes landing-scroll {
+  0%,
+  100% {
+    transform: scaleY(0.45);
+    opacity: 0.35;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-scroll-cue i {
+    animation: none;
+  }
+}
+
 .role-line > span,
 .role-line > span > span,
 .role-line > span > span > span {
