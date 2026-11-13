@@ -64,7 +64,7 @@ export const CAST = [
   { id: 'gekko', model: 'gekko', weapon: 'phantom', pose: 'crouch', position: [53.1, 3, -83.4], rotationY: -1.0, aimAt: [70, 3.6, -88], lookAt: [70, 4, -90] },
   { id: 'sova', model: 'sova', weapon: 'vandal', pose: 'ads', position: [56.4, 3, -82.2], rotationY: -0.9, aimAt: [60, 3.8, -98], lookAt: [60, 4.5, -98] },
   // Behind the tunnel crate (x 53..55, north face z = -84). The ult stands in front of her, still covered by the crate.
-  { id: 'sage', model: 'sage', weapon: null, pose: 'cast', position: [54.5, 3, -81.5], rotationY: Math.PI, lookAt: [58, 4.2, -92] },
+  { id: 'sage', model: 'sage', weapon: null, pose: 'cast', position: [54.5, 3, -81.5], rotationY: 0, lookAt: [54.5, 3.6, -83.1] },
 
   // ---- Heaven / skills: the long-range anchor on the crate perch ----
   { id: 'chamber', model: 'chamber', weapon: 'operator', pose: 'ads', position: [62, 7, -84], rotationY: 0.62, aimAt: [49.5, 4.2, -100], lookAt: [49.5, 4.2, -100], kneel: 0.0 },

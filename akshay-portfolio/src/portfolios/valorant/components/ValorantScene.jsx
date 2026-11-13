@@ -380,7 +380,7 @@ function SageUlt({ position }) {
   useFrame(({ clock }) => {
     if (ref.current) ref.current.position.y = position[1] + Math.sin(clock.elapsedTime * 1.2) * 0.06;
   });
-  return <primitive ref={ref} object={model} position={position} rotation={[0, Math.PI, 0]} scale={0.9} dispose={null} />;
+  return <primitive ref={ref} object={model} position={position} rotation={[0, 0, 0]} scale={0.9} dispose={null} />;
 }
 
 /* --------------------------------------------------------------------- Gun */
