@@ -250,7 +250,7 @@ async function optimizeOther(io, name) {
   const spans = new Map();
   await doc.transform(textureCompress({ encoder: sharp, targetFormat: 'png' }));
   const flat = await findFlatTextures(doc);
-  tagTextures(doc, spans, { aggressive: true, flat, shrink: false });
+  tagTextures(doc, spans, { aggressive: name !== 'agent_gekko', flat, shrink: false });
   await doc.transform(textureCompress({ encoder: sharp, targetFormat: 'png', resize: [4, 4], pattern: /_flat_/ }));
   await io.write(stepA, doc);
   const stepM = path.join(tmpDir, name + '.m.glb');
@@ -259,7 +259,8 @@ async function optimizeOther(io, name) {
   gltfTransform(['etc1s', stepM, stepM2, '--pattern', 'etc1sn_*', '--quality', '255', '--compression', '2', '--slots', '*']);
   gltfTransform(['uastc', stepM2, stepB, '--pattern', 'uastc_*', '--level', '2', '--rdo', '--rdo-lambda', '2', '--zstd', '18', '--slots', '*']);
   const stepC = path.join(tmpDir, `${name}.c.glb`);
-  gltfTransform(['draco', stepB, stepC, '--method', 'edgebreaker']);
+  // 16-bit UVs/positions: agent atlases can sit far outside 0..1, where the 12-bit default smears facial detail.
+  gltfTransform(['draco', stepB, stepC, '--method', 'edgebreaker', '--quantize-texcoord', '16', '--quantize-position', '16', '--quantize-normal', '12']);
   safeCopy(stepC, output);
   console.log(`[${name}] ${mb(input)} MB -> ${mb(output)} MB`);
 }
@@ -271,6 +272,6 @@ const io = await createIO();
 
 if (target === 'all' || target === 'map') await optimizeMap(io);
 if (target === 'all' || target === 'agents') {
-  for (const name of OTHERS) await optimizeOther(io, name);
+  for (const name of OTHERS.filter((n) => !process.argv[3] || n === process.argv[3])) await optimizeOther(io, name);
 }
 if (!process.env.KEEP_TMP) rmSync(tmpDir, { recursive: true, force: true });

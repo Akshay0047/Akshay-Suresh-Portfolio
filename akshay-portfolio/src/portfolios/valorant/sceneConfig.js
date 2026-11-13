@@ -56,9 +56,9 @@ export const SUN_OFFSET = [40, 60, 25];
  */
 export const CAST = [
   // ---- Attackers: site entry push through the west door ----
-  { id: 'neon', model: 'neon', weapon: 'vandal', weaponScale: 0.8, pose: 'ready', position: [55.4, 3, -98.4], rotationY: -Math.PI / 2, aimAt: [72, 3.4, -99.5], lookAt: [72, 4.2, -99.5] },
-  { id: 'phoenix', model: 'phoenix', weapon: 'phantom', weaponScale: 0.8, pose: 'ready', position: [51.8, 3, -95.6], rotationY: -Math.PI / 2 + 0.1, aimAt: [72, 3.4, -97], lookAt: [72, 4.2, -97] },
-  { id: 'reyna', model: 'reyna', weapon: 'vandal', weaponScale: 0.8, pose: 'lowReady', position: [58, 3, -102], rotationY: -Math.PI / 2 - 0.35, aimAt: [70, 3.2, -90], lookAt: [68, 4.2, -92] },
+  { id: 'neon', model: 'neon', weapon: 'vandal', weaponScale: 0.8, pose: 'ready', position: [55.4, 3, -98.4], rotationY: -0.63, aimAt: [58, 4.4, -102], lookAt: [58, 4.7, -102] },
+  { id: 'phoenix', model: 'phoenix', weapon: 'phantom', weaponScale: 0.8, pose: 'ready', position: [51.8, 3, -95.6], rotationY: -0.58, aimAt: [60.5, 4.2, -109], lookAt: [60.5, 4.5, -109] },
+  { id: 'reyna', model: 'reyna', weapon: 'vandal', weaponScale: 0.8, pose: 'ready', position: [58, 3, -102], rotationY: Math.PI - 0.63, aimAt: [55.4, 4.4, -98.4], lookAt: [55.4, 4.7, -98.4] },
 
   // ---- Attackers: back-line utility from cover ----
   { id: 'gekko', model: 'gekko', weapon: 'phantom', pose: 'crouch', position: [53.1, 3, -83.4], rotationY: -1.0, aimAt: [70, 3.6, -88], lookAt: [70, 4, -90] },
@@ -82,7 +82,7 @@ export const SECTION_ORBITS = {
   // Operations: Neon and Phoenix stand with rifles at the ready.
   projects: { center: v(55.4, 4.4, -98.4), radius: 5.4, height: 0.6, angle: Math.PI / 2 - 0.25, arc: 0.25, speed: 0.2 },
   // Arsenal: Chamber's Operator from the crate perch.
-  skills: { center: v(62, 8.6, -84), radius: 5.6, height: 0.5, angle: Math.PI - 0.2, arc: 0.5, speed: 0.2 },
+  skills: { center: v(59.2, 5, -83), radius: 9.5, height: 5, angle: Math.PI - 0.2, arc: 0.5, speed: 0.2 },
   // Dossier: Cypher anchoring Heaven, seen through the window frame from the site.
   about: { center: v(67.3, 10.4, -103.4), radius: 10, height: 0.5, angle: 0, arc: 0.1, speed: 0.2 },
   // Comms: Jett mid-ult.

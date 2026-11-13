@@ -26,7 +26,9 @@ from mathutils import Vector
 
 addon_utils.enable("io_scene_gltf2", default_set=False, persistent=False)
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "public", "models"))
+ASSETS = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "assets-src"))
+ROOT = os.path.join(ASSETS, "blend")  # .blend sources
+OUT = os.path.join(ASSETS, "models")  # <name>.src.glb, compressed afterwards by optimize_valorant_assets.mjs
 
 DECIMATE_RATIO = 0.6
 
@@ -40,7 +42,7 @@ JOBS = (
     ("phoenixSimple.blend", "agent_phoenix.glb", 1024, True),
     ("sageSimple.blend", "agent_sage.glb", 1024, True),
     ("sovaSimple.blend", "agent_sova.glb", 1024, True),
-    ("gekkoSimple.blend", "agent_gekko.glb", 1024, True),
+    ("gekkoSimple.blend", "agent_gekko.glb", 1024, True, 1.0),
     ("chamberSimple.blend", "agent_chamber.glb", 1024, True),
     ("cypherComplex.blend", "agent_cypher.glb", 1024, True),
     # Weapons / props. Armature bones (Muzzle, Trigger, Left_Hand_Target ...) stay as glTF nodes.
@@ -171,9 +173,9 @@ def export_glb(path, export_skins):
     bpy.ops.export_scene.gltf(**kwargs)
 
 
-def process(blend_name, out_name, max_texture, export_skins):
+def process(blend_name, out_name, max_texture, export_skins, decimate=DECIMATE_RATIO):
     source = os.path.join(ROOT, blend_name)
-    destination = os.path.join(ROOT, out_name)
+    destination = os.path.join(OUT, out_name.replace(".glb", ".src.glb"))
     print(f"OPEN {source}")
     bpy.ops.wm.open_mainfile(filepath=source)
 
@@ -182,7 +184,8 @@ def process(blend_name, out_name, max_texture, export_skins):
     drop_shape_keys()
     if not any(obj.type == "ARMATURE" for obj in bpy.data.objects):
         bake_prop_transforms()
-    applied, deferred = decimate_all_meshes(DECIMATE_RATIO)
+    # Decimating a face mesh tears its UVs (nose/mouth collapse across seams); ratio 1.0 skips it.
+    applied, deferred = decimate_all_meshes(decimate) if decimate < 1.0 else (0, 0)
     bones = [bone.name for obj in bpy.data.objects if obj.type == "ARMATURE" for bone in obj.data.bones]
     low, high = world_bounds()
 

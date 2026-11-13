@@ -100,7 +100,8 @@ function shoulderedCarry(t, { aimAt, lookAt }, { pitch, cross, pocket, lean, twi
         pocket[1] + aimDir[1] * STOCK + b * 0.004,
         pocket[2] + aimDir[2] * STOCK,
       ],
-      aimDir,
+      // With a target the barrel tracks it; otherwise it holds the carry angle.
+      ...(aimAt ? { aimAt } : { aimDir }),
       palm: [-0.03, -0.085],
     },
     poles: { L: [0.55, -1, 0.1], R: [-0.45, -1, -0.2] },
