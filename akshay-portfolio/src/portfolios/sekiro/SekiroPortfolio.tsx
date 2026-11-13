@@ -892,6 +892,7 @@ function FruitArcade() {
         <span>{active ? 'EXIT' : 'DRAW THE BLADE'}</span>
         <b ref={scoreLabelRef}>00</b>
       </BladeButton>
+      {active && <span className="fruit-touch-hint">Swipe across the screen to slice</span>}
     </>
   );
 }
@@ -1205,7 +1206,7 @@ function ProjectPanel({
 
                 <button
                   type="button"
-                  className="mt-4 flex w-fit shrink-0 items-center gap-3 text-sm text-[#a3907c] uppercase tracking-widest transition-colors hover:text-[#e8d4b4]"
+                  className="read-scroll-button mt-4 flex w-fit shrink-0 items-center gap-3 text-sm text-[#a3907c] uppercase tracking-widest transition-colors hover:text-[#e8d4b4]"
                   onClick={() => setIsScrollOpen((prev) => !prev)}
                 >
                   <span className="flex h-6 min-w-6 items-center justify-center rounded border border-[#4a3b2c] bg-[#141210] px-2 text-xs leading-none">Y</span>
@@ -1782,37 +1783,7 @@ function Router() {
   );
 }
 
-function MobileBlocker() {
-  return (
-    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#0a0908] px-6 text-center">
-      <div className="flex max-w-md flex-col items-center gap-6">
-        <span className="font-serif text-4xl tracking-wider text-[#b8976a]">影</span>
-        <h1 className="text-xl uppercase tracking-[0.3em] text-[#e8d4b4]">A Shinobi Requires Proper Tools</h1>
-        <p className="text-sm leading-relaxed text-[#8c7a6b]">
-          This experience features heavy 3D assets and complex interfaces forged exclusively for desktop screens.
-          <br />
-          <br />
-          Please return using a laptop or desktop computer to proceed.
-        </p>
-      </div>
-    </div>
-  );
-}
-
 export default function SekiroPortfolio() {
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  if (isMobile) {
-    return <MobileBlocker />;
-  }
-
   const routerBase = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/sekiro`;
 
   return (

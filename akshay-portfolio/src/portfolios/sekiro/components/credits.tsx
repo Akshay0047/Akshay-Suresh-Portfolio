@@ -22,13 +22,13 @@ function CreditsModal({ onClose }: { onClose: () => void }) {
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-md border border-[#2a241d] bg-[#0f0d0c] p-8 shadow-2xl"
+        className="credits-dialog relative w-full max-w-md border border-[#2a241d] bg-[#0f0d0c] p-8 shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 text-[#8c7a6b] transition-colors hover:text-[#e8d4b4]"
+          className="credits-close absolute top-4 right-4 text-[#8c7a6b] transition-colors hover:text-[#e8d4b4]"
           aria-label="Close credits"
         >
           ✕

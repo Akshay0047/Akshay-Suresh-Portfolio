@@ -134,6 +134,15 @@ export function EquipmentPanel() {
   }, [bindModelViewer]);
 
   useEffect(() => {
+    const viewer = modelRef.current;
+    const coarsePointer = window.matchMedia('(hover: none), (pointer: coarse)').matches;
+    if (coarsePointer) {
+      viewer?.setAttribute('camera-controls', '');
+      viewer?.setAttribute('interaction-prompt', 'auto');
+      viewer?.setAttribute('touch-action', 'none');
+      return;
+    }
+
     const handleMouseMove = (event: MouseEvent) => {
       if (!modelRef.current) return;
 
