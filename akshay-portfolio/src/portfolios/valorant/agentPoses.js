@@ -76,44 +76,71 @@ export function adsPose(t, { aimAt, lookAt, breathe = 0.006, stance = 0, kneel =
 }
 
 /**
- * Upright stance with the rifle held in a relaxed two-handed ready position at chest height:
- * feet shoulder-width, weight even, barrel pointing downrange and slightly low.
+ * Shouldered carry shared by the two low-ready poses. Character space is [left, up, forward].
+ * The stock sits in the right shoulder pocket and the barrel angles down and a little across
+ * the body, so the support hand reaches the foregrip without the arm over-extending and the
+ * gun stays in front of the torso instead of passing through it.
+ * The weapon spec positions the trigger, so it is the pocket plus one (scaled) stock length.
  */
-export function readyPose(t, { aimAt, lookAt } = {}) {
+const STOCK = 0.34;
+function shoulderedCarry(t, { aimAt, lookAt }, { pitch, cross, pocket, lean, twist, hips, feet, kneePoles }) {
   const b = Math.sin(t * 1.2);
+  const dir = [cross, -Math.sin(pitch), Math.cos(pitch)];
+  const len = Math.hypot(...dir);
+  const aimDir = dir.map((n) => n / len);
   return {
-    hips: [0, -0.03, 0.02],
-    lean: 0.03,
-    twist: 0.06,
-    feet: {
-      L: { p: [0.17, 0, 0.08], pitch: 0 },
-      R: { p: [-0.17, 0, -0.1], pitch: 0 },
+    hips,
+    lean,
+    twist,
+    feet,
+    kneePoles,
+    weapon: {
+      pos: [
+        pocket[0] + aimDir[0] * STOCK,
+        pocket[1] + aimDir[1] * STOCK + b * 0.004,
+        pocket[2] + aimDir[2] * STOCK,
+      ],
+      aimDir,
+      palm: [-0.03, -0.085],
     },
-    kneePoles: { L: [0.15, 0, 1], R: [-0.15, 0, 1] },
-    weapon: { pos: [-0.09, 1.24 + b * 0.005, 0.2], aimAt, palm: [-0.03, -0.085] },
-    poles: { L: [0.8, -0.8, -0.3], R: [-0.9, -0.6, -0.4] },
+    poles: { L: [0.55, -1, 0.1], R: [-0.45, -1, -0.2] },
     lookAt: lookAt ?? aimAt,
   };
 }
 
-/** Low-ready: rifle lowered across the body, eyes up, weight forward and ready to peek. */
-export function lowReadyPose(t, { aimAt, lookAt } = {}) {
-  const b = Math.sin(t * 1.1);
-  return {
+/** Standing ready: rifle shouldered with the muzzle dropped about 17 degrees, eyes over the sights. */
+export function readyPose(t, opts = {}) {
+  return shoulderedCarry(t, opts, {
+    pitch: 0.3,
+    cross: 0.17,
+    pocket: [-0.17, 1.55, 0.04],
+    lean: 0.04,
+    twist: -0.3,
+    hips: [0, -0.03, 0.02],
+    feet: {
+      L: { p: [0.19, 0, 0.14], pitch: 0 },
+      R: { p: [-0.16, 0, -0.14], pitch: 0 },
+    },
+    kneePoles: { L: [0.15, 0, 1], R: [-0.15, 0, 1] },
+  });
+}
+
+/** Low-ready: stock still in the shoulder, muzzle dropped about 35 degrees, weight on the front foot. */
+export function lowReadyPose(t, opts = {}) {
+  return shoulderedCarry(t, opts, {
+    pitch: 0.62,
+    cross: 0.2,
+    pocket: [-0.17, 1.5, 0.06],
+    lean: 0.12,
+    twist: -0.34,
     hips: [0, -0.1, 0.05],
-    lean: 0.16,
-    twist: 0.08,
     feet: {
       L: { p: [0.19, 0, 0.3], pitch: 0 },
       R: { p: [-0.17, 0, -0.18], pitch: 0.15 },
     },
     kneePoles: { L: [0.2, 0, 1], R: [-0.2, 0, 1] },
-    weapon: { pos: [-0.12, 1.08 + b * 0.008, 0.24], aimAt, palm: [-0.03, -0.085] },
-    poles: { L: [0.8, -0.8, -0.3], R: [-0.9, -0.6, -0.4] },
-    lookAt,
-  };
+  });
 }
-
 /**
  * Grounded tactical crouch behind cover. Hips sit low over a wide, staggered base,
  * back stays long, and the gun comes up in a compact peek.

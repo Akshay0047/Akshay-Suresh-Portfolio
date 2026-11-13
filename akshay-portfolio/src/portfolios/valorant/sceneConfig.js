@@ -56,9 +56,9 @@ export const SUN_OFFSET = [40, 60, 25];
  */
 export const CAST = [
   // ---- Attackers: site entry push through the west door ----
-  { id: 'neon', model: 'neon', weapon: 'vandal', pose: 'ready', position: [55.4, 3, -98.4], rotationY: -Math.PI / 2, aimAt: [72, 3.4, -99.5], lookAt: [72, 4.2, -99.5] },
-  { id: 'phoenix', model: 'phoenix', weapon: 'phantom', pose: 'ready', position: [51.8, 3, -95.6], rotationY: -Math.PI / 2 + 0.1, aimAt: [72, 3.4, -97], lookAt: [72, 4.2, -97] },
-  { id: 'reyna', model: 'reyna', weapon: 'vandal', pose: 'lowReady', position: [58, 3, -102], rotationY: -Math.PI / 2 - 0.35, aimAt: [70, 3.2, -90], lookAt: [68, 4.2, -92] },
+  { id: 'neon', model: 'neon', weapon: 'vandal', weaponScale: 0.8, pose: 'ready', position: [55.4, 3, -98.4], rotationY: -Math.PI / 2, aimAt: [72, 3.4, -99.5], lookAt: [72, 4.2, -99.5] },
+  { id: 'phoenix', model: 'phoenix', weapon: 'phantom', weaponScale: 0.8, pose: 'ready', position: [51.8, 3, -95.6], rotationY: -Math.PI / 2 + 0.1, aimAt: [72, 3.4, -97], lookAt: [72, 4.2, -97] },
+  { id: 'reyna', model: 'reyna', weapon: 'vandal', weaponScale: 0.8, pose: 'lowReady', position: [58, 3, -102], rotationY: -Math.PI / 2 - 0.35, aimAt: [70, 3.2, -90], lookAt: [68, 4.2, -92] },
 
   // ---- Attackers: back-line utility from cover ----
   { id: 'gekko', model: 'gekko', weapon: 'phantom', pose: 'crouch', position: [53.1, 3, -83.4], rotationY: -1.0, aimAt: [70, 3.6, -88], lookAt: [70, 4, -90] },

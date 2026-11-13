@@ -129,7 +129,10 @@ export function describeWeapon(scene, override) {
   else if (magazine) up.copy(trigger).sub(magazine);
   else up.set(0, 1, 0);
   up.addScaledVector(aim, -up.dot(aim)).normalize();
-  return { aim, up, trigger, foregrip: point('Left_Hand_Target'), muzzle };
+  // Grip points are measured in the weapon's own space; a scaled weapon moves them with it.
+  const k = scene.scale.x || 1;
+  const foregrip = point('Left_Hand_Target');
+  return { aim, up, trigger: trigger.multiplyScalar(k), foregrip: foregrip && foregrip.multiplyScalar(k), muzzle: muzzle.multiplyScalar(k) };
 }
 
 /** Parent a cloned weapon under the R_Hand bone. Returns the holder group. */
