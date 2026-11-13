@@ -3,7 +3,6 @@ import { Canvas, createPortal, useFrame, useThree } from '@react-three/fiber';
 import { Bvh, Html, OrbitControls, Outlines, useGLTF, useProgress } from '@react-three/drei';
 import { Bloom, EffectComposer } from '@react-three/postprocessing';
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js';
-import { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
 import gsap from 'gsap';
 import * as THREE from 'three';
 import CameraController from './CameraController.jsx';
@@ -14,51 +13,10 @@ import {
 import { applyPose, attachWeapon, createRig, describeWeapon, overlayClipLocal } from '../agentRig.js';
 import { adsPose, castPose, crouchPose, lowReadyPose, readyPose, ultPose } from '../agentPoses.js';
 import { getSprinterRotations, preloadSprinterClip } from '../psaClip.js';
+import { extendLoader } from '../assetPreload.js';
 import { QUALITY_ENV, QUALITY_SHADOW_MAP, useSettingsStore } from '../store/useSettingsStore.js';
 
 preloadSprinterClip();
-
-// Draco decoder is served locally from /public/draco (copied from three).
-useGLTF.setDecoderPath(`${import.meta.env.BASE_URL}draco/`);
-
-// Textures ship as KTX2 (Basis). They stay GPU-compressed (BC7/ASTC/ETC2), about a quarter of the
-// memory of RGBA8, and need no CPU image decode. The transcoder is served from /public/basis.
-// It gets its own LoadingManager: hundreds of textures finish in the same tick, and routing each one
-// through the default manager floods drei's useProgress store ("Maximum update depth exceeded").
-const ktx2Loader = new KTX2Loader(new THREE.LoadingManager()).setTranscoderPath(`${import.meta.env.BASE_URL}basis/`);
-{
-  const probe = new THREE.WebGLRenderer();
-  ktx2Loader.detectSupport(probe);
-  probe.dispose();
-  probe.forceContextLoss();
-}
-
-// Dozens of assets can finish in one tick, and drei turns every itemEnd into a synchronous React
-// update. Coalesce them so useProgress updates at most every 60 ms.
-{
-  const manager = THREE.DefaultLoadingManager;
-  const forward = manager.onProgress;
-  const finish = manager.onLoad;
-  let pending = null;
-  let timer = 0;
-  const flush = () => {
-    window.clearTimeout(timer);
-    const latest = pending;
-    pending = null;
-    if (latest) forward?.(...latest);
-  };
-  manager.onProgress = (...args) => {
-    const idle = pending === null;
-    pending = args;
-    if (idle) timer = window.setTimeout(flush, 60);
-  };
-  // drei's progress handler marks the store active again, so it must land before onLoad does.
-  manager.onLoad = (...args) => {
-    flush();
-    finish?.(...args);
-  };
-}
-const extendLoader = (loader) => loader.setKTX2Loader(ktx2Loader);
 
 /** Debug/test registry: window.__valorant exposes agents, camera and a NaN audit. */
 const registry = { agents: {}, mapScene: null, bodies: [] };
@@ -955,10 +913,3 @@ export default function ValorantScene({ rig, onShadersReady, onBootStage }) {
     </Canvas>
   );
 }
-
-[
-  MODEL_URLS.map,
-  ...Object.values(MODEL_URLS.agents),
-  ...Object.values(MODEL_URLS.weapons),
-  ...Object.values(MODEL_URLS.props),
-].forEach((url) => useGLTF.preload(url, true, false, extendLoader));

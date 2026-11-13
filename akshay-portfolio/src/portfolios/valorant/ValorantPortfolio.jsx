@@ -4,7 +4,12 @@ import ValorantScene from './components/ValorantScene.jsx';
 import ValorantHUD from './components/ValorantHUD.jsx';
 import ValorantCursor from './components/ValorantCursor.jsx';
 import { CameraRigProvider, useCameraRig } from './components/CameraController.jsx';
+import { warmValorantAssets } from './assetPreload.js';
 import './styles/valorant.css';
+
+// A direct visit still downloads every model immediately. The landing page warms
+// the same cache in stages, so these calls reuse anything already decoded.
+warmValorantAssets('all');
 
 /*
  * Boot is reported as one bar. Fetching is real progress; the later stages ease toward their cap
