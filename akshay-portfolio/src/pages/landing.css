@@ -1,0 +1,74 @@
+.landing {
+  background: #070708;
+  color: #f4f1ea;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  overflow-anchor: none;
+  overflow-x: hidden;
+}
+
+.landing section[id] {
+  scroll-margin-top: 5.5rem;
+}
+
+.landing nav[data-open] {
+  --pn-surface: #121214 !important;
+}
+
+@media (max-width: 767px) {
+  .landing > header {
+    padding-top: max(0.75rem, env(safe-area-inset-top));
+    padding-right: max(1rem, env(safe-area-inset-right));
+    padding-left: max(1rem, env(safe-area-inset-left));
+    overflow-x: clip;
+  }
+
+  .landing > header nav {
+    width: 100%;
+    max-width: 100%;
+    --pn-h: 44px !important;
+  }
+
+  .landing > header nav[data-open] > div:not([aria-hidden='true']) {
+    right: 0;
+    left: 0;
+    width: 100%;
+  }
+
+  .landing > header nav[data-open] > div:not([aria-hidden='true']) a {
+    min-height: 44px;
+  }
+
+  .landing > main > section:last-child {
+    padding-right: max(1.5rem, env(safe-area-inset-right));
+    padding-bottom: max(5rem, calc(env(safe-area-inset-bottom) + 1.5rem));
+    padding-left: max(1.5rem, env(safe-area-inset-left));
+  }
+}
+
+.landing-name {
+  display: block !important;
+  width: 100%;
+  max-width: 7.2ch;
+  font-weight: 500;
+  letter-spacing: -0.045em;
+  line-height: 0.9;
+  font-size: clamp(3.6rem, 12vw, 4.75rem);
+}
+
+@media (min-width: 1024px) {
+  .landing-name {
+    max-width: none;
+    white-space: nowrap;
+    font-size: clamp(4.25rem, 4.6vw, 5.6rem);
+  }
+}
+
+.role-line > span,
+.role-line > span > span,
+.role-line > span > span > span {
+  display: block;
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+  justify-content: flex-start;
+}
