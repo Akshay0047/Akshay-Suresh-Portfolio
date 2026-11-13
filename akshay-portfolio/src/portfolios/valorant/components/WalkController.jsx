@@ -13,6 +13,7 @@ const FLOOR_Y = 3;
 const EYE_HEIGHT = 1.6;
 const EYE_Y = FLOOR_Y + EYE_HEIGHT;
 const BOUNDS = { minX: 51.5, maxX: 76.5, minZ: -111, maxZ: -81.5 };
+const SPAWN = [68, -90];
 const MOVE_SPEED = 5.6;
 const GRAVITY = 20;
 const JUMP_VELOCITY = 7;
@@ -78,9 +79,9 @@ export default function WalkController({ onExit, getMap, getAgents, getBodies })
   };
 
   useLayoutEffect(() => {
-    camera.position.x = THREE.MathUtils.clamp(camera.position.x, BOUNDS.minX, BOUNDS.maxX);
-    camera.position.z = THREE.MathUtils.clamp(camera.position.z, BOUNDS.minZ, BOUNDS.maxZ);
-    camera.position.y = EYE_Y;
+    // Always start on open courtyard floor: no walls or crates within 4 m and clear of every agent.
+    // (Entering from a section camera used to drop the player wherever that camera sat, often inside geometry.)
+    camera.position.set(SPAWN[0], EYE_Y, SPAWN[1]);
     camera.rotation.order = 'YXZ';
     lookTarget.set(SITE_CENTER[0], EYE_Y, SITE_CENTER[2]);
     camera.lookAt(lookTarget);

@@ -90,7 +90,7 @@ export function readyPose(t, { aimAt, lookAt } = {}) {
       R: { p: [-0.17, 0, -0.1], pitch: 0 },
     },
     kneePoles: { L: [0.15, 0, 1], R: [-0.15, 0, 1] },
-    weapon: { pos: [-0.12, 1.28 + b * 0.005, 0.3], aimAt, palm: [-0.03, -0.085] },
+    weapon: { pos: [-0.09, 1.24 + b * 0.005, 0.2], aimAt, palm: [-0.03, -0.085] },
     poles: { L: [0.8, -0.8, -0.3], R: [-0.9, -0.6, -0.4] },
     lookAt: lookAt ?? aimAt,
   };

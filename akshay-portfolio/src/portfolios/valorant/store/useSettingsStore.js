@@ -15,7 +15,7 @@ function clampScale(value) {
 }
 
 export const useSettingsStore = create((set) => ({
-  graphicsQuality: 'high',
+  graphicsQuality: 'med',
   shadowsEnabled: true,
   bloomEnabled: false,
   resolutionScale: 1.5,
